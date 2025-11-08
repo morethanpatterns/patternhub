@@ -88,8 +88,9 @@ Read the full license here: [CC BY-NC 4.0](https://creativecommons.org/licenses/
 
 ## Credits
 
-Created by the **more than patterns** team —  
-inspired by patternmaking systems such as _Aldrich_, _Müller & Sohn_, and _Hofenbitzer_.
+Created by the **more than patterns** team
+
+---
 
 ## Communities
 
