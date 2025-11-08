@@ -1,0 +1,18 @@
+# --- Normalize line endings ---
+* text=auto eol=lf
+
+# --- Treat scripts and config files as text, not binary ---
+*.jsx text
+*.json text
+*.md text
+
+# --- Optional: prevent diff noise in binary images ---
+*.png binary
+*.jpg binary
+*.ai binary
+*.pdf binary
+
+* text=auto eol=lf
+*.jsx text
+*.json text
+*.md  text

@@ -1,0 +1,21 @@
+{
+  "name": "patternhub",
+  "version": "1.0.0",
+  "description": "**PatternHub** is a structured collection of Adobe Illustrator patternmaking scripts — organized by **author → block → version** — with both stable and beta releases.  \r Each script contains ExtendScript (`.jsx`) files that automate pattern drafting directly inside Illustrator.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+ 
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/morethanpatterns/patternhub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/morethanpatterns/patternhub/issues"
+  },
+  "homepage": "https://github.com/morethanpatterns/patternhub#readme"
+}

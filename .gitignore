@@ -1,0 +1,23 @@
+# --- System files (auto-created by macOS or Windows)
+.DS_Store
+Thumbs.db
+
+# --- Editor & IDE settings (local only)
+.vscode/
+.idea/
+*.code-workspace
+
+# --- Node / build artifacts (if you later use build scripts)
+node_modules/
+dist/
+
+# --- Temporary or export files
+*.zip
+*.tmp
+**/__MACOSX/
+
+# --- Misc
+# Anything starting with a dot (except .gitignore itself) is usually config.
+
+# personal notes folder (ignored by git)
+PrivateNotes/
