@@ -2,6 +2,29 @@
   "name": "PatternHub",
   "version": "1.0.0",
   "schema": "https://patternhub.dev/schema/v1",
-  "updated": "2025-11-03",
-  "authors": []
+  "updated": "2025-11-08",
+  "authors": [
+    {
+      "id": "armstrong",
+      "name": "Armstrong",
+      "blocks": [
+        {
+          "id": "bodice",
+          "title": "Armstrong Bodice Block",
+          "category": "Bodice",
+          "versions": [
+            {
+              "version": "1",
+              "status": "stable",
+              "path": "Armstrong/Bodice/armstrong_bodice_draft_v1.jsx",
+              "label": "Bodice Draft",
+              "requires": {
+                "illustrator": ">=25"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
