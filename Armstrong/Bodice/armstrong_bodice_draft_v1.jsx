@@ -1,3 +1,6 @@
+#target illustrator
+#targetengine armstrongBodiceDraft
+
 /*
  Helen Joseph-Armstrong's Front Bodice Draft
  ------------------------------------------------
@@ -1134,7 +1137,7 @@
                 frontField.alignment = ["left", "center"];
                 editFieldMap[def.front.key] = { field: frontField, label: def.label + " (Front)" };
             } else {
-                var frontPlaceholder = row.add("statictext", undefined, "—");
+                var frontPlaceholder = row.add("statictext", undefined, "-");
                 frontPlaceholder.preferredSize = [valueWidth, 18];
             }
 
@@ -1145,7 +1148,7 @@
                 backField.alignment = ["left", "center"];
                 editFieldMap[def.back.key] = { field: backField, label: def.label + " (Back)" };
             } else {
-                var backPlaceholder = row.add("statictext", undefined, "—");
+                var backPlaceholder = row.add("statictext", undefined, "-");
                 backPlaceholder.preferredSize = [valueWidth, 18];
             }
         }
