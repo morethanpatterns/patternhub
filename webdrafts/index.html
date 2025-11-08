@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Armstrong's Bodice - SVG</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="controls">
+      <div class="pattern-picker">
+        <label>Digital Patternmaking Drafts
+          <select id="patternSelect">
+            <option value="armstrong" selected>Armstrong's Bodice</option>
+            <optgroup label="Almost Ready">
+              <option value="aldrich" disabled>Aldrich's Close Fitting Bodice (Coming Soon)</option>
+              <option value="hofenbitzer-trouser" disabled>Hofenbitzer's Standard Trouser (Coming Soon)</option>
+              <option value="hofenbitzer-casual-bodice" disabled>Hofenbitzer's Casual Bodice (Coming Soon)</option>
+              <option value="hofenbitzer-contoured-bodice" disabled>Hofenbitzer's Contoured Bodice (Coming Soon)</option>
+              <option value="hofenbitzer-basic-skirt" disabled>Hofenbitzer's Basic Skirt (Coming Soon)</option>
+            </optgroup>
+            <optgroup label="Next In Line">
+              <option value="kim-skirt-sloper" disabled>Kim's Skirt Sloper (Next Up)</option>
+              <option value="kim-bodice-sloper" disabled>Kim's Bodice Sloper (Next Up)</option>
+            </optgroup>
+          </select>
+        </label>
+      </div>
+
+      <div id="armstrongControls">
+        <h1>Armstrong's Bodice <span class="beta-tag">Beta</span></h1>
+        <p class="hint">All measurements are in inches. Defaults reference the size 12 block from <a href="https://archive.org/details/patternmakingfor0000jose_f0p5" target="_blank" rel="noopener">Armstrong's book</a> - please have it handy when entering your own measurements. Convert fractional values (1/2, 1/8, etc.) to decimals before entering them.</p>
+        <p class="note">Need help or want to request a draft? Join the <a href="https://discord.gg/CFvfXfZUTa" target="_blank" rel="noopener">Discord community</a>.</p>
+
+        <div class="form-grid">
+          <label>Front Full Length
+            <input id="fullLength" type="number" value="18" step="0.0625">
+          </label>
+          <label>Front Across Shoulder
+            <input id="acrossShoulder" type="number" value="7.9375" step="0.0625">
+          </label>
+          <label>Front Centre Length
+            <input id="centreFrontLength" type="number" value="14.875" step="0.0625">
+          </label>
+          <label>Front Bust Arc
+            <input id="bustArc" type="number" value="10.375" step="0.0625">
+          </label>
+          <label>Front Shoulder Slope
+            <input id="shoulderSlope" type="number" value="18.125" step="0.0625">
+          </label>
+          <label>Front Bust Depth
+            <input id="bustDepth" type="number" value="9.6875" step="0.0625">
+          </label>
+          <label>Front Shoulder Length
+            <input id="shoulderLength" type="number" value="5.375" step="0.0625">
+          </label>
+          <label>Bust Span
+            <input id="bustSpan" type="number" value="4.0625" step="0.0625">
+          </label>
+          <label>Across Chest
+            <input id="acrossChest" type="number" value="6.9375" step="0.0625">
+          </label>
+          <label>Dart Placement
+            <input id="dartPlacement" type="number" value="3.4375" step="0.0625">
+          </label>
+          <label>New Strap
+            <input id="newStrap" type="number" value="18.1875" step="0.0625">
+          </label>
+          <label>Front Side Length
+            <input id="sideLength" type="number" value="8.5" step="0.0625">
+          </label>
+          <label>Front Waist Arc
+            <input id="waistArc" type="number" value="7.375" step="0.0625">
+          </label>
+          <label>Bust Cup
+            <select id="bustCup">
+              <option value="A Cup">A Cup</option>
+              <option value="B Cup" selected>B Cup</option>
+              <option value="C Cup">C Cup</option>
+              <option value="D Cup">D Cup</option>
+            </select>
+          </label>
+
+          <label>Back Full Length
+            <input id="fullLengthBack" type="number" value="17.875" step="0.0625">
+          </label>
+          <label>Back Across Shoulder
+            <input id="acrossShoulderBack" type="number" value="8.1875" step="0.0625">
+          </label>
+          <label>Back Centre Length
+            <input id="centreFrontLengthBack" type="number" value="17" step="0.0625">
+          </label>
+          <label>Back Arc
+            <input id="bustArcBack" type="number" value="9" step="0.0625">
+          </label>
+          <label>Back Shoulder Slope
+            <input id="shoulderSlopeBack" type="number" value="17.375" step="0.0625">
+          </label>
+          <label>Back Shoulder Length
+            <input id="shoulderLengthBack" type="number" value="5.375" step="0.0625">
+          </label>
+          <label>Across Back
+            <input id="acrossChestBack" type="number" value="7.1875" step="0.0625">
+          </label>
+          <label>Back Side Length
+            <input id="sideLengthBack" type="number" value="8.5" step="0.0625">
+          </label>
+          <label>Back Waist Arc
+            <input id="waistArcBack" type="number" value="7" step="0.0625">
+          </label>
+          <label>Back Neck
+            <input id="backNeck" type="number" value="3.125" step="0.0625">
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="download" type="button">Download SVG</button>
+        </div>
+
+        <div class="actions secondary">
+          <button id="share" type="button" class="link-button">Share Link</button>
+          <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
+        </div>
+
+        <div class="toggles">
+          <label><input id="showGuides" type="checkbox" checked>Show Construction Lines</label>
+          <label><input id="showMarkers" type="checkbox" checked>Show Markers and Letters</label>
+        </div>
+      </div>
+
+      <div id="patternPlaceholder" class="pattern-placeholder" hidden>
+        <p>Select a draft to begin. Additional patterns are on the way.</p>
+      </div>
+    </section>
+    <section class="preview-pane">
+      <div id="preview"></div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
