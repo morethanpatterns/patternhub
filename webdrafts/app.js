@@ -1034,7 +1034,7 @@ function generateAldrich(params) {
   }
 
   registerPoint("23", midpoint(points["3"], points["22"]));
-  registerPoint("24", { x: points["23"].x, y: points["5"].y });
+  registerPoint("24", { x: points["23"].x, y: points["5"].y }, { skipMarker: true });
   registerPoint("26", { x: points["23"].x, y: points["23"].y + 2.5 });
   registerPoint("27", {
     x: points["20"].x - params.frontNeckDart,
@@ -1064,7 +1064,7 @@ function generateAldrich(params) {
     color: ALDRICH_COLORS.primary,
     name: "Centre Back (CB)",
   });
-  drawSegment(layers.front, points["4"], pointC, {
+  drawSegment(layers.foundation, points["4"], pointC, {
     color: ALDRICH_COLORS.primary,
     name: "CF Line",
   });
@@ -1765,6 +1765,13 @@ function regen() {
   }
   currentSvg = config.generate(config.readParams());
   preview.appendChild(currentSvg);
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      window.localStorage.setItem("patternhub:lastPattern", selectedPattern);
+    } catch (errStorePattern) {
+      console.warn("Unable to persist pattern selection:", errStorePattern);
+    }
+  }
 }
 
 function ensurePatternSelection(patternKey) {
@@ -1784,6 +1791,20 @@ function initApp() {
 
   preview = document.getElementById("preview");
   patternSelect = document.getElementById("patternSelect");
+  let initialPattern = "armstrong";
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const storedPattern = window.localStorage.getItem("patternhub:lastPattern");
+      if (storedPattern && PATTERN_CONFIGS[storedPattern]) {
+        initialPattern = storedPattern;
+      }
+    } catch (errLoadPattern) {
+      console.warn("Unable to read pattern selection from storage:", errLoadPattern);
+    }
+  }
+  if (patternSelect && patternSelect.value !== initialPattern && PATTERN_CONFIGS[initialPattern]) {
+    patternSelect.value = initialPattern;
+  }
   armstrongControls = document.getElementById("armstrongControls");
   patternPlaceholder = document.getElementById("patternPlaceholder");
   enhancePatternSelect();
