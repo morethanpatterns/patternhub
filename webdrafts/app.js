@@ -17,6 +17,50 @@ const BUST_CUP_OFFSETS = {
   C: 1.5,
   D: 1.75,
 };
+const CM_TO_MM = 10;
+const ALDRICH_HANDLE_RATIO_CAP = 1.6;
+const ALDRICH_COLORS = Object.freeze({
+  primary: "#111111",
+  guide: "#000000",
+});
+
+const baseAldrichDefaults = {
+  bust: 88,
+  waist: 68,
+  hip: 94,
+  bustEase: 5,
+  waistEase: 3,
+  napeToWaist: 41,
+  shoulder: 12.25,
+  backWidth: 34.4,
+  waistToHip: 20.6,
+  armscyeDepth: 21,
+  chest: 32.4,
+  neckSize: 37,
+  frontWaistDartBackOff: 2.5,
+};
+const ALDRICH_DEFAULT_FRONT_NECK_DART = computeAldrichFrontNeckDart(baseAldrichDefaults.bust);
+const ALDRICH_DEFAULT_DARTS = computeAldrichWaistDarts(
+  baseAldrichDefaults.bust,
+  baseAldrichDefaults.waist,
+  baseAldrichDefaults.bustEase,
+  baseAldrichDefaults.waistEase
+);
+const ALDRICH_DEFAULTS = Object.freeze({
+  ...baseAldrichDefaults,
+  frontNeckDart: ALDRICH_DEFAULT_FRONT_NECK_DART,
+  frontWaistDart: ALDRICH_DEFAULT_DARTS.front,
+  backWaistDart: ALDRICH_DEFAULT_DARTS.back,
+  sideWaistDart: ALDRICH_DEFAULT_DARTS.side,
+  bustWaistDiff: Math.abs(
+    computeAldrichWaistDiff(
+      baseAldrichDefaults.bust,
+      baseAldrichDefaults.waist,
+      baseAldrichDefaults.bustEase,
+      baseAldrichDefaults.waistEase
+    )
+  ),
+});
 
 function createSvgRoot(w = PAGE_WIDTH_MM, h = PAGE_HEIGHT_MM) {
   const svg = document.createElementNS(NS, "svg");
@@ -112,6 +156,11 @@ function generateArmstrong(params) {
   };
 
   const points = {};
+  const defaultMarkerStyle = {
+    radius: 2,
+    fontSize: 3,
+    offsetY: 0,
+  };
 
   function toSvgCoords(pt) {
     const mapped = {
@@ -775,6 +824,592 @@ function drawBezierArcSegment(targetLayer, startPoint, controlPoint, endPoint, o
   return svg;
 }
 
+function generateAldrich(params) {
+  const svg = createSvgRoot();
+  svg.appendChild(
+    Object.assign(document.createElementNS(NS, "metadata"), {
+      textContent: JSON.stringify({
+        tool: "AldrichCloseFittingBodiceWeb",
+        units: "mm",
+        source: "Aldrich/Bodice/aldrich_close_fitting_bodice_with_waist_shaping_v1.jsx",
+      }),
+    })
+  );
+
+  const layers = createAldrichLayerStack(svg);
+  const bounds = createBounds();
+  const origin = {
+    x: PAGE_MARGIN_MM,
+    y: PAGE_MARGIN_MM,
+  };
+
+  const points = {};
+
+  function toSvgCoords(pt) {
+    const mapped = {
+      x: origin.x + pt.x * CM_TO_MM,
+      y: origin.y + pt.y * CM_TO_MM,
+    };
+    bounds.include(mapped.x, mapped.y);
+    return mapped;
+  }
+
+  function applyArtHandle(point, handle, signX = 1, signY = 1) {
+    const artY = -point.y;
+    const nextArtY = artY + signY * handle.y;
+    return {
+      x: point.x + signX * handle.x,
+      y: -nextArtY,
+    };
+  }
+
+  function drawSegment(layerNode, start, end, opts = {}) {
+    if (!layerNode || !start || !end) return null;
+    const s = toSvgCoords(start);
+    const e = toSvgCoords(end);
+    const attrs = {
+      fill: "none",
+      stroke: opts.color || "#111",
+      "stroke-width": opts.width || 0.45,
+      "stroke-linecap": "butt",
+    };
+    if (opts.dashed) {
+      attrs["stroke-dasharray"] = opts.dash || "6 4";
+    }
+    const pathEl = path(`M ${s.x} ${s.y} L ${e.x} ${e.y}`, attrs);
+    if (opts.name) pathEl.setAttribute("data-name", opts.name);
+    layerNode.appendChild(pathEl);
+    return pathEl;
+  }
+
+  const defaultMarkerStyle = {
+    radius: MARKER_RADIUS_MM * 1.05,
+    fontSize: LABEL_FONT_SIZE_MM * 0.8,
+    offsetY: 0,
+  };
+
+  function drawCurveSegment(layerNode, start, control1, control2, end, opts = {}) {
+    if (!layerNode || !start || !end || !control1 || !control2) return null;
+    const s = toSvgCoords(start);
+    const c1 = toSvgCoords(control1);
+    const c2 = toSvgCoords(control2);
+    const e = toSvgCoords(end);
+    const attrs = {
+      fill: "none",
+      stroke: opts.color || ALDRICH_COLORS.primary,
+      "stroke-width": opts.width || 0.45,
+    };
+    if (opts.dashed) {
+      attrs["stroke-dasharray"] = opts.dash || "6 4";
+    }
+    const pathEl = path(`M ${s.x} ${s.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${e.x} ${e.y}`, attrs);
+    if (opts.name) pathEl.setAttribute("data-name", opts.name);
+    layerNode.appendChild(pathEl);
+    return pathEl;
+  }
+
+  function drawPolylineSegment(layerNode, coordList = [], opts = {}) {
+    if (!layerNode || !coordList.length) return null;
+    const pointsList = coordList.map((coord) => toSvgCoords(coord));
+    const d = pointsList
+      .map((pt, idx) => `${idx === 0 ? "M" : "L"} ${pt.x} ${pt.y}`)
+      .join(" ");
+    const attrs = {
+      fill: "none",
+      stroke: opts.color || "#111",
+      "stroke-width": opts.width || 0.45,
+    };
+    if (opts.dashed) {
+      attrs["stroke-dasharray"] = opts.dash || "6 4";
+    }
+    if (opts.name) {
+      attrs["data-name"] = opts.name;
+    }
+    const pathEl = path(d, attrs);
+    layerNode.appendChild(pathEl);
+    return pathEl;
+  }
+
+  function addMarker(id, coords, style = {}) {
+    if (!layers.markers || !layers.numbers || !coords) return;
+    const anchor = toSvgCoords(coords);
+    const radius =
+      typeof style.radius === "number" && Number.isFinite(style.radius) ? style.radius : MARKER_RADIUS_MM;
+    const fontSize =
+      typeof style.fontSize === "number" && Number.isFinite(style.fontSize) ? style.fontSize : LABEL_FONT_SIZE_MM;
+    const offsetY =
+      typeof style.offsetY === "number" && Number.isFinite(style.offsetY)
+        ? style.offsetY
+        : LABEL_FONT_SIZE_MM * 0.35;
+    const circle = document.createElementNS(NS, "circle");
+    circle.setAttribute("cx", anchor.x);
+    circle.setAttribute("cy", anchor.y);
+    circle.setAttribute("r", radius);
+    circle.setAttribute("fill", "#111");
+    circle.setAttribute("stroke", "#111");
+    circle.setAttribute("stroke-width", 0.25);
+    layers.markers.appendChild(circle);
+
+    const label = textNode(anchor.x, anchor.y + offsetY, String(id), {
+      "font-size": fontSize,
+      fill: "#fff",
+      "text-anchor": "middle",
+      "dominant-baseline": "middle",
+    });
+    layers.numbers.appendChild(label);
+  }
+
+  function registerPoint(id, coords, opts = {}) {
+    points[id] = coords;
+    if (!opts.skipMarker) {
+      addMarker(id, coords, opts.markerStyle || defaultMarkerStyle);
+    }
+    return coords;
+  }
+
+  function registerLetterPoint(id, coords, label) {
+    points[id] = coords;
+    if (layers.letters && coords) {
+      const anchor = toSvgCoords(coords);
+      const letterNode = textNode(anchor.x, anchor.y, String(label || id), {
+        "font-size": LABEL_FONT_SIZE_MM,
+        fill: "#111",
+        "text-anchor": "middle",
+      });
+      layers.letters.appendChild(letterNode);
+    }
+    return coords;
+  }
+
+  const depth01 = 1.5;
+  const depth12 = params.armscyeDepth + 0.5;
+  const vertical02 = depth01 + depth12;
+  const halfBust = params.bust / 2;
+  const width23 = halfBust + params.bustEase;
+  const napeToWaist = params.napeToWaist;
+
+  registerPoint("0", { x: 0, y: 0 });
+  registerPoint("1", { x: 0, y: depth01 });
+  registerPoint("2", { x: 0, y: vertical02 });
+  registerPoint("3", { x: width23, y: vertical02 });
+  registerPoint("4", { x: width23, y: 0 });
+  registerPoint("5", { x: 0, y: depth01 + napeToWaist });
+  registerPoint("6", { x: width23, y: depth01 + napeToWaist });
+  const pointC = registerLetterPoint("c", { x: points["6"].x, y: points["6"].y + 1 }, "c");
+
+  registerPoint("9", { x: params.neckSize / 5 - 0.2, y: points["0"].y });
+  registerPoint("10", {
+    x: points["1"].x,
+    y: points["1"].y + params.armscyeDepth / 5 - 0.7,
+  });
+  registerPoint("20", {
+    x: points["4"].x - (params.neckSize / 5 - 0.7),
+    y: points["4"].y,
+  });
+  registerPoint("21", {
+    x: points["4"].x,
+    y: points["4"].y + (params.neckSize / 5 - 0.2),
+  });
+  registerPoint("22", {
+    x: points["3"].x - params.chest / 2 - params.frontNeckDart / 2,
+    y: points["3"].y,
+  });
+
+  const distanceB = computeAldrichPointBDistance(params.bust);
+  if (distanceB > 0) {
+    const diag = distanceB / Math.SQRT2;
+    const pointB = registerLetterPoint(
+      "b",
+      {
+        x: points["22"].x - diag,
+        y: points["22"].y - diag,
+      },
+      "b"
+    );
+    drawSegment(layers.foundation, points["22"], pointB, {
+      dashed: true,
+      color: ALDRICH_COLORS.guide,
+      name: "Front Armhole Guideline",
+    });
+  }
+
+  registerPoint("23", midpoint(points["3"], points["22"]));
+  registerPoint("24", { x: points["23"].x, y: points["5"].y });
+  registerPoint("26", { x: points["23"].x, y: points["23"].y + 2.5 });
+  registerPoint("27", {
+    x: points["20"].x - params.frontNeckDart,
+    y: points["20"].y,
+  });
+
+  registerPoint("31", {
+    x: points["22"].x,
+    y: points["22"].y + ((points["21"].y - points["3"].y) / 3),
+  });
+  drawSegment(layers.foundation, points["5"], pointC, {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Waist Drop Guide",
+  });
+  drawSegment(layers.foundation, points["2"], points["3"], {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Bust Line",
+  });
+  drawSegment(layers.foundation, points["5"], points["6"], {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Waistline",
+  });
+  drawSegment(layers.back, points["1"], points["5"], {
+    color: ALDRICH_COLORS.primary,
+    name: "Centre Back (CB)",
+  });
+  drawSegment(layers.front, points["4"], pointC, {
+    color: ALDRICH_COLORS.primary,
+    name: "CF Line",
+  });
+  drawSegment(layers.front, points["21"], pointC, {
+    color: ALDRICH_COLORS.primary,
+    name: "Centre Front (CF)",
+  });
+  drawSegment(layers.foundation, points["0"], points["4"], {
+    color: ALDRICH_COLORS.primary,
+    name: "0 - 4",
+  });
+  drawSegment(layers.foundation, points["0"], points["5"], {
+    color: ALDRICH_COLORS.primary,
+    name: "Foundation Centre Back",
+  });
+
+  const shoulderDeltaY = Math.abs(points["10"].y - points["9"].y);
+  const shoulderPlusOne = params.shoulder + 1;
+  let shoulderHorizontal = 0;
+  if (shoulderPlusOne > shoulderDeltaY) {
+    const squared = Math.pow(shoulderPlusOne, 2) - Math.pow(shoulderDeltaY, 2);
+    shoulderHorizontal = Math.sqrt(Math.max(squared, 0));
+  }
+  registerPoint("11", {
+    x: points["9"].x + shoulderHorizontal,
+    y: points["10"].y,
+  });
+  registerPoint("12", midpoint(points["9"], points["11"]));
+  const guide12Down = { x: points["12"].x, y: points["12"].y + 5 };
+  drawSegment(layers.foundation, points["12"], guide12Down, {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Back Shoulder Guide",
+  });
+  registerPoint("13", { x: guide12Down.x - 1, y: guide12Down.y });
+  drawSegment(layers.foundation, guide12Down, points["13"], {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+  });
+  const shoulderSegmentLength = distanceBetween(points["9"], points["11"]);
+  const shoulderDartHalfWidth = 0.5;
+  if (shoulderSegmentLength > 0.0001) {
+    const shoulderUnitX = (points["11"].x - points["9"].x) / shoulderSegmentLength;
+    const shoulderUnitY = (points["11"].y - points["9"].y) / shoulderSegmentLength;
+    const shoulderDartLeft = {
+      x: points["12"].x - shoulderUnitX * shoulderDartHalfWidth,
+      y: points["12"].y - shoulderUnitY * shoulderDartHalfWidth,
+    };
+    const shoulderDartRight = {
+      x: points["12"].x + shoulderUnitX * shoulderDartHalfWidth,
+      y: points["12"].y + shoulderUnitY * shoulderDartHalfWidth,
+    };
+    const leftLegLength = distanceBetween(shoulderDartLeft, points["13"]);
+    const rightVector = {
+      x: shoulderDartRight.x - points["13"].x,
+      y: shoulderDartRight.y - points["13"].y,
+    };
+    const rightVectorLength = Math.hypot(rightVector.x, rightVector.y);
+    let shoulderDartRightAdjusted = shoulderDartRight;
+    if (rightVectorLength > 0.0001 && leftLegLength > 0.0001) {
+      const scale = leftLegLength / rightVectorLength;
+      shoulderDartRightAdjusted = {
+        x: points["13"].x + rightVector.x * scale,
+        y: points["13"].y + rightVector.y * scale,
+      };
+    }
+    drawPolylineSegment(layers.back, [shoulderDartLeft, points["13"], shoulderDartRightAdjusted], {
+      color: ALDRICH_COLORS.primary,
+      name: "Back Shoulder Dart",
+    });
+    drawSegment(layers.back, points["9"], shoulderDartLeft, {
+      color: ALDRICH_COLORS.primary,
+      name: "Back Shoulder Line",
+    });
+    drawSegment(layers.back, shoulderDartRightAdjusted, points["11"], {
+      color: ALDRICH_COLORS.primary,
+      name: "Back Shoulder Dart Right to 11",
+    });
+  } else {
+    drawSegment(layers.back, points["9"], points["11"], {
+      color: ALDRICH_COLORS.primary,
+      name: "Back Shoulder Line",
+    });
+  }
+
+  const backNeckChord = distanceBetween(points["1"], points["9"]);
+  const handle1 = clampHandleToChordCm(4.3, 0, backNeckChord);
+  const handle9 = clampHandleToChordCm(-1, -1, backNeckChord);
+  const backNeckControl1 = applyArtHandle(points["1"], handle1, 1, 1);
+  const backNeckControl2 = applyArtHandle(points["9"], handle9, 1, 1);
+  drawCurveSegment(
+    layers.back,
+    points["1"],
+    backNeckControl1,
+    backNeckControl2,
+    points["9"],
+    { name: "Back Neck Curve", color: ALDRICH_COLORS.primary }
+  );
+
+  const frontNeckChord = distanceBetween(points["20"], points["21"]);
+  const handle20 = clampHandleToChordCm(0, -4, frontNeckChord);
+  const handle21 = clampHandleToChordCm(-4, 0, frontNeckChord);
+  const frontNeckControl1 = applyArtHandle(points["20"], handle20, 1, 1);
+  const frontNeckControl2 = applyArtHandle(points["21"], handle21, 1, 1);
+  drawCurveSegment(
+    layers.front,
+    points["20"],
+    frontNeckControl1,
+    frontNeckControl2,
+    points["21"],
+    { name: "Front Neck Curve", color: ALDRICH_COLORS.primary }
+  );
+
+  drawSegment(layers.front, points["20"], points["26"], {
+    color: ALDRICH_COLORS.primary,
+    name: "Front Neck Dart Left Leg",
+  });
+  drawSegment(layers.front, points["27"], points["26"], {
+    color: ALDRICH_COLORS.primary,
+    name: "Front Neck Dart Right Leg",
+  });
+
+  registerPoint("28", { x: points["11"].x, y: points["11"].y + 1.5 });
+  registerPoint("29", { x: points["28"].x + 10, y: points["28"].y });
+  drawSegment(layers.foundation, points["11"], points["28"], {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Back Shoulder Drop",
+  });
+  drawSegment(layers.foundation, points["28"], points["29"], {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Shoulder Balance Line",
+  });
+  const frontShoulderDeltaY = Math.abs(points["28"].y - points["27"].y);
+  const frontShoulderHorizontalSq = Math.pow(params.shoulder, 2) - Math.pow(frontShoulderDeltaY, 2);
+  let frontShoulderHorizontal = 0;
+  if (frontShoulderHorizontalSq > 0) {
+    frontShoulderHorizontal = Math.sqrt(frontShoulderHorizontalSq);
+  }
+  let candidateX30 = points["27"].x - frontShoulderHorizontal;
+  const minFrontX = Math.min(points["28"].x, points["29"].x);
+  const maxFrontX = Math.max(points["28"].x, points["29"].x);
+  if (candidateX30 < minFrontX) candidateX30 = minFrontX;
+  if (candidateX30 > maxFrontX) candidateX30 = maxFrontX;
+  registerPoint("30", { x: candidateX30, y: points["28"].y });
+  drawSegment(layers.front, points["27"], points["30"], {
+    color: ALDRICH_COLORS.primary,
+    name: "Front Shoulder Line",
+  });
+
+  registerPoint("14", {
+    x: points["2"].x + params.backWidth / 2 + 0.5,
+    y: points["2"].y,
+  });
+  const pointADistance = computeAldrichPointADistance(params.bust);
+  if (pointADistance > 0) {
+    const diagComponent = pointADistance / Math.SQRT2;
+    const pointA = registerLetterPoint(
+      "a",
+      {
+        x: points["14"].x + diagComponent,
+        y: points["14"].y - diagComponent,
+      },
+      "a"
+    );
+    drawSegment(layers.foundation, points["14"], pointA, {
+      dashed: true,
+      color: ALDRICH_COLORS.guide,
+      name: "Back Armhole Guideline",
+    });
+  }
+  registerPoint("15", { x: points["14"].x, y: points["10"].y });
+  registerPoint("16", midpoint(points["14"], points["15"]));
+  registerPoint("17", midpoint(points["2"], points["14"]));
+  registerPoint("32", midpoint(points["14"], points["22"]));
+  drawSegment(layers.foundation, points["14"], points["15"], {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Back Width Line",
+  });
+
+  const backArmholeChord = distanceBetween(points["11"], points["32"]);
+  const backHandle11 = clampHandleToChordCm(3.2, 9.79, backArmholeChord);
+  const backHandle32 = clampHandleToChordCm(6.15, 0, backArmholeChord);
+  const backArmControl1 = applyArtHandle(points["11"], backHandle11, -1, -1);
+  const backArmControl2 = applyArtHandle(points["32"], backHandle32, -1, -1);
+  drawCurveSegment(
+    layers.back,
+    points["11"],
+    backArmControl1,
+    backArmControl2,
+    points["32"],
+    { name: "Back Armhole Curve", color: ALDRICH_COLORS.primary }
+  );
+
+  const frontArmholeChord = distanceBetween(points["30"], points["32"]);
+  const frontHandle30 = clampHandleToChordCm(7, 11.25, frontArmholeChord);
+  const frontHandle32 = clampHandleToChordCm(6.47, 0, frontArmholeChord);
+  const frontArmControl1 = applyArtHandle(points["30"], frontHandle30, 1, -1);
+  const frontArmControl2 = applyArtHandle(points["32"], frontHandle32, 1, -1);
+  drawCurveSegment(
+    layers.front,
+    points["30"],
+    frontArmControl1,
+    frontArmControl2,
+    points["32"],
+    { name: "Front Armhole Curve", color: ALDRICH_COLORS.primary }
+  );
+
+  drawSegment(layers.foundation, points["22"], points["31"], {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Chest Line",
+  });
+
+  const waistLineY = points["5"].y;
+  registerPoint("33", { x: points["23"].x, y: waistLineY });
+
+  const line5 = points["5"];
+  if (line5 && pointC) {
+    const intersectionSpecs = [
+      {
+        id: "d",
+        x: points["17"] ? points["17"].x : null,
+        top: points["17"],
+        bottom: points["17"] ? { x: points["17"].x, y: pointC.y } : null,
+      },
+      {
+        id: "e",
+        x: points["23"] ? points["23"].x : null,
+        top: points["23"],
+        bottom: points["23"] ? { x: points["23"].x, y: pointC.y } : null,
+      },
+      {
+        id: "f",
+        x: points["32"] ? points["32"].x : null,
+        top: points["32"],
+        bottom: points["32"] ? { x: points["32"].x, y: pointC.y } : null,
+      },
+    ];
+    intersectionSpecs.forEach((spec) => {
+      if (!spec.top || !spec.bottom || !isFiniteNumber(spec.x)) return;
+      const intersectionPoint = intersectLineWithVertical(line5, pointC, spec.x);
+      if (!intersectionPoint) return;
+      if (!valueBetween(intersectionPoint.y, spec.top.y, spec.bottom.y, 0.001)) return;
+      registerLetterPoint(spec.id, intersectionPoint, spec.id);
+    });
+  }
+
+  const frontWaistDartWidth = params.frontWaistDart;
+  if (points["e"] && Number.isFinite(frontWaistDartWidth) && frontWaistDartWidth > 0) {
+    const half = frontWaistDartWidth / 2;
+    const dartBaseLeft = { x: points["e"].x - half, y: points["e"].y };
+    const dartBaseRight = { x: points["e"].x + half, y: points["e"].y };
+    const dartBackOff = Number.isFinite(params.frontWaistDartBackOff) ? params.frontWaistDartBackOff : 2.5;
+    const dartApex = { x: points["e"].x, y: points["26"].y + dartBackOff };
+    drawSegment(layers.front, dartBaseLeft, dartApex, {
+      color: ALDRICH_COLORS.primary,
+      name: "Front Waist Dart Left Leg",
+    });
+    drawSegment(layers.front, dartBaseRight, dartApex, {
+      color: ALDRICH_COLORS.primary,
+      name: "Front Waist Dart Right Leg",
+    });
+    drawSegment(layers.foundation, dartApex, points["e"], {
+      dashed: true,
+      color: ALDRICH_COLORS.guide,
+      name: "Front Waist Dart Bisector",
+    });
+  }
+
+  const backWaistDartWidth = params.backWaistDart;
+  if (points["d"] && points["17"] && Number.isFinite(backWaistDartWidth) && backWaistDartWidth > 0) {
+    const half = backWaistDartWidth / 2;
+    const backLeftBase = { x: points["d"].x - half, y: points["d"].y };
+    const backRightBase = { x: points["d"].x + half, y: points["d"].y };
+    const backApex = { x: points["17"].x, y: points["17"].y };
+    drawSegment(layers.back, backLeftBase, backApex, {
+      color: ALDRICH_COLORS.primary,
+      name: "Back Waist Dart Left Leg",
+    });
+    drawSegment(layers.back, backRightBase, backApex, {
+      color: ALDRICH_COLORS.primary,
+      name: "Back Waist Dart Right Leg",
+    });
+    drawSegment(layers.foundation, points["17"], points["d"], {
+      dashed: true,
+      color: ALDRICH_COLORS.guide,
+      name: "Back Waist Dart Bisector",
+    });
+  }
+
+  if (points["f"]) {
+    drawSegment(layers.foundation, points["32"], points["f"], {
+      dashed: true,
+      color: ALDRICH_COLORS.guide,
+      name: "Side",
+    });
+    if (points["32"]) {
+      const sideWaistDartWidth = params.sideWaistDart;
+      if (Number.isFinite(sideWaistDartWidth) && sideWaistDartWidth > 0) {
+        let sideOffset = (sideWaistDartWidth - 1) / 2;
+        if (!Number.isFinite(sideOffset) || sideOffset < 0) {
+          sideOffset = sideWaistDartWidth / 2;
+        }
+        const sideLeftBase = { x: points["f"].x - sideOffset, y: points["f"].y };
+        const sideRightBase = { x: points["f"].x + sideOffset, y: points["f"].y };
+        const sideApex = { x: points["32"].x, y: points["32"].y };
+        drawSegment(layers.back, sideLeftBase, sideApex, {
+          color: ALDRICH_COLORS.primary,
+          name: "Back Side Waist Dart",
+        });
+        drawSegment(layers.front, sideRightBase, sideApex, {
+          color: ALDRICH_COLORS.primary,
+          name: "Front Side Waist Dart",
+        });
+        drawSegment(layers.front, pointC, sideRightBase, {
+          color: ALDRICH_COLORS.primary,
+          name: "Front Waist Line",
+        });
+        drawSegment(layers.back, points["5"], sideLeftBase, {
+          color: ALDRICH_COLORS.primary,
+          name: "Back Waist Line",
+        });
+      }
+    }
+  }
+
+  drawSegment(layers.foundation, points["10"], points["1"], {
+    color: ALDRICH_COLORS.primary,
+    name: "Back Blade",
+  });
+  const backSquareEnd = { x: points["10"].x + width23 / 2, y: points["10"].y };
+  drawSegment(layers.foundation, points["10"], backSquareEnd, {
+    dashed: true,
+    color: ALDRICH_COLORS.guide,
+    name: "Back Blade Guide",
+  });
+
+  applyLayerVisibility(layers, params);
+  fitSvgToBounds(svg, bounds);
+  return svg;
+}
+
 function movePoint(pt, dx = 0, dy = 0) {
   return { x: pt.x + dx, y: pt.y + dy };
 }
@@ -816,7 +1451,28 @@ function createArmstrongLayerStack(svg) {
   };
 }
 
-function readParams() {
+function createAldrichLayerStack(svg) {
+  const foundation = layer(svg, "Aldrich Guides", { asLayer: true, prefix: "aldrich" });
+  const front = layer(svg, "Aldrich Front Bodice", { asLayer: true, prefix: "aldrich" });
+  const back = layer(svg, "Aldrich Back Bodice", { asLayer: true, prefix: "aldrich" });
+  const darts = layer(svg, "Aldrich Darts", { asLayer: true, prefix: "aldrich" });
+  const labelsParent = layer(svg, "Aldrich Labels & Markers", { asLayer: true, prefix: "aldrich" });
+  const markers = layer(labelsParent, "Markers", { asLayer: true, prefix: "aldrich" });
+  const numbers = layer(labelsParent, "Numbers", { asLayer: true, prefix: "aldrich" });
+  const letters = layer(labelsParent, "Letters", { asLayer: true, prefix: "aldrich" });
+  return {
+    foundation,
+    front,
+    back,
+    darts,
+    labelsParent,
+    markers,
+    numbers,
+    letters,
+  };
+}
+
+function readArmstrongParams() {
   const bustSpan = getNumber("bustSpan", 4.0625);
   const dartPlacement = getNumber("dartPlacement", 3.4375);
   return {
@@ -849,6 +1505,178 @@ function readParams() {
     showGuides: getCheckbox("showGuides", true),
     showMarkers: getCheckbox("showMarkers", true),
   };
+}
+
+function readAldrichParams() {
+  return {
+    bust: getNumber("aldrichBust", ALDRICH_DEFAULTS.bust),
+    bustEase: getNumber("aldrichBustEase", ALDRICH_DEFAULTS.bustEase),
+    waist: getNumber("aldrichWaist", ALDRICH_DEFAULTS.waist),
+    waistEase: getNumber("aldrichWaistEase", ALDRICH_DEFAULTS.waistEase),
+    hip: getNumber("aldrichHip", ALDRICH_DEFAULTS.hip),
+    waistToHip: getNumber("aldrichWaistToHip", ALDRICH_DEFAULTS.waistToHip),
+    napeToWaist: getNumber("aldrichNapeToWaist", ALDRICH_DEFAULTS.napeToWaist),
+    shoulder: getNumber("aldrichShoulder", ALDRICH_DEFAULTS.shoulder),
+    backWidth: getNumber("aldrichBackWidth", ALDRICH_DEFAULTS.backWidth),
+    chest: getNumber("aldrichChest", ALDRICH_DEFAULTS.chest),
+    armscyeDepth: getNumber("aldrichArmscyeDepth", ALDRICH_DEFAULTS.armscyeDepth),
+    neckSize: getNumber("aldrichNeckSize", ALDRICH_DEFAULTS.neckSize),
+    frontNeckDart: getNumber("aldrichFrontNeckDart", ALDRICH_DEFAULTS.frontNeckDart),
+    frontWaistDart: getNumber("aldrichFrontWaistDart", ALDRICH_DEFAULTS.frontWaistDart),
+    backWaistDart: getNumber("aldrichBackWaistDart", ALDRICH_DEFAULTS.backWaistDart),
+    sideWaistDart: getNumber("aldrichSideWaistDart", ALDRICH_DEFAULTS.sideWaistDart),
+    frontWaistDartBackOff: getNumber(
+      "aldrichFrontWaistDartBackOff",
+      ALDRICH_DEFAULTS.frontWaistDartBackOff
+    ),
+    bustWaistDiff: getNumber("aldrichBustWaistDiff", ALDRICH_DEFAULTS.bustWaistDiff),
+    closeWaistShaping: getCheckbox("aldrichCloseWaist", true),
+    reducedDarting: getCheckbox("aldrichReducedDarting", false),
+    showGuides: getCheckbox("aldrichShowGuides", true),
+    showMarkers: getCheckbox("aldrichShowMarkers", true),
+  };
+}
+
+function setInputNumber(id, value, precision = 2) {
+  const input = document.getElementById(id);
+  if (!input || !Number.isFinite(value)) return;
+  const factor = Math.pow(10, precision);
+  const rounded = Math.round(value * factor) / factor;
+  input.value = rounded;
+}
+
+function getAldrichReductionFactor() {
+  const reducedToggle = document.getElementById("aldrichReducedDarting");
+  return reducedToggle && reducedToggle.checked ? 0.75 : 1;
+
+}
+
+function applyAldrichDartDistribution(diff, options = {}) {
+  const darts = computeAldrichWaistDartsFromDiff(diff);
+  const factor = getAldrichReductionFactor();
+  const frontValue = darts.front * factor;
+  const backValue = darts.back * factor;
+  const sideValue = darts.side * factor;
+  const force = options.force === true;
+
+  if (force || !aldrichAutoState.frontWaistDartEdited) {
+    setInputNumber("aldrichFrontWaistDart", frontValue);
+    if (options.resetManual) aldrichAutoState.frontWaistDartEdited = false;
+  }
+  if (force || !aldrichAutoState.backWaistDartEdited) {
+    setInputNumber("aldrichBackWaistDart", backValue);
+    if (options.resetManual) aldrichAutoState.backWaistDartEdited = false;
+  }
+  if (force || !aldrichAutoState.sideWaistDartEdited) {
+    setInputNumber("aldrichSideWaistDart", sideValue);
+    if (options.resetManual) aldrichAutoState.sideWaistDartEdited = false;
+  }
+  if (!options.skipDiffField && (force || !aldrichAutoState.bustWaistDiffEdited)) {
+    setInputNumber("aldrichBustWaistDiff", Math.abs(diff));
+    if (options.resetManual) aldrichAutoState.bustWaistDiffEdited = false;
+  }
+}
+
+function updateAldrichDerivedFields(options = {}) {
+  const bust = getNumber("aldrichBust", ALDRICH_DEFAULTS.bust);
+  const waist = getNumber("aldrichWaist", ALDRICH_DEFAULTS.waist);
+  const bustEase = getNumber("aldrichBustEase", ALDRICH_DEFAULTS.bustEase);
+  const waistEase = getNumber("aldrichWaistEase", ALDRICH_DEFAULTS.waistEase);
+  const force = options.force === true;
+  const frontNeck = computeAldrichFrontNeckDart(bust);
+  if (Number.isFinite(frontNeck)) {
+    if (force || !aldrichAutoState.frontNeckDartEdited) {
+      setInputNumber("aldrichFrontNeckDart", frontNeck);
+      if (options.resetManual) aldrichAutoState.frontNeckDartEdited = false;
+    }
+  }
+  const diff = computeAldrichWaistDiff(bust, waist, bustEase, waistEase);
+  if (Number.isFinite(diff)) {
+    applyAldrichDartDistribution(diff, {
+      force,
+      resetManual: options.resetManual,
+      skipDiffField: false,
+    });
+  }
+}
+
+function initAldrichAutoFields() {
+  if (aldrichAutoInitialized) return;
+  aldrichAutoInitialized = true;
+  const baseFieldIds = [
+    "aldrichBust",
+    "aldrichBustEase",
+    "aldrichWaist",
+    "aldrichWaistEase",
+    "aldrichChest",
+    "aldrichBackWidth",
+    "aldrichHip",
+    "aldrichWaistToHip",
+    "aldrichNapeToWaist",
+    "aldrichShoulder",
+    "aldrichArmscyeDepth",
+    "aldrichNeckSize",
+  ];
+  baseFieldIds.forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    ["input", "change"].forEach((evt) => {
+      input.addEventListener(evt, () => updateAldrichDerivedFields());
+    });
+  });
+
+  [
+    ["aldrichFrontNeckDart", "frontNeckDartEdited"],
+    ["aldrichFrontWaistDart", "frontWaistDartEdited"],
+    ["aldrichBackWaistDart", "backWaistDartEdited"],
+    ["aldrichSideWaistDart", "sideWaistDartEdited"],
+  ].forEach(([id, flag]) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener("input", () => {
+      aldrichAutoState[flag] = true;
+    });
+  });
+
+  const bustWaistInput = document.getElementById("aldrichBustWaistDiff");
+  if (bustWaistInput) {
+    bustWaistInput.addEventListener("input", () => {
+      aldrichAutoState.bustWaistDiffEdited = true;
+    });
+    bustWaistInput.addEventListener("change", () => {
+      const diffVal = parseFloat(bustWaistInput.value);
+      if (Number.isFinite(diffVal)) {
+        applyAldrichDartDistribution(diffVal, { force: true, resetManual: true, skipDiffField: true });
+        aldrichAutoState.bustWaistDiffEdited = true;
+        scheduleRegen();
+      }
+    });
+  }
+
+  const closeToggle = document.getElementById("aldrichCloseWaist");
+  const reducedToggle = document.getElementById("aldrichReducedDarting");
+  if (closeToggle && reducedToggle) {
+    closeToggle.addEventListener("change", () => {
+      if (closeToggle.checked) {
+        reducedToggle.checked = false;
+      } else if (!reducedToggle.checked) {
+        closeToggle.checked = true;
+      }
+      updateAldrichDerivedFields({ force: true, resetManual: true });
+      scheduleRegen();
+    });
+    reducedToggle.addEventListener("change", () => {
+      if (reducedToggle.checked) {
+        closeToggle.checked = false;
+      } else if (!closeToggle.checked) {
+        closeToggle.checked = true;
+      }
+      updateAldrichDerivedFields({ force: true, resetManual: true });
+      scheduleRegen();
+    });
+  }
+
+  updateAldrichDerivedFields({ force: true, resetManual: true });
 }
 
 function getNumber(id, fallback) {
@@ -886,6 +1714,34 @@ let patternSelect = null;
 let armstrongControls = null;
 let patternPlaceholder = null;
 let appInitialized = false;
+let aldrichAutoInitialized = false;
+const aldrichAutoState = {
+  frontNeckDartEdited: false,
+  frontWaistDartEdited: false,
+  backWaistDartEdited: false,
+  sideWaistDartEdited: false,
+  bustWaistDiffEdited: false,
+};
+const PATTERN_CONFIGS = {
+  armstrong: {
+    title: "Armstrong's Bodice",
+    elementId: "armstrongControls",
+    readParams: readArmstrongParams,
+    generate: generateArmstrong,
+    downloadId: "download",
+    shareId: "share",
+    filename: "armstrong_bodice.svg",
+  },
+  aldrich: {
+    title: "Aldrich's Close Fitting Bodice",
+    elementId: "aldrichControls",
+    readParams: readAldrichParams,
+    generate: generateAldrich,
+    downloadId: "downloadAldrich",
+    shareId: "shareAldrich",
+    filename: "aldrich_close_fitting_bodice.svg",
+  },
+};
 
 function regen() {
   if (regenTimer) {
@@ -894,17 +1750,27 @@ function regen() {
   }
   if (!preview) return;
   preview.innerHTML = "";
-  const pattern = patternSelect ? patternSelect.value : "armstrong";
-  if (pattern !== "armstrong") {
+  const selectedPattern = patternSelect ? patternSelect.value : "armstrong";
+  const config = PATTERN_CONFIGS[selectedPattern];
+  if (!config) {
     const label = patternSelect
-      ? patternSelect.options[patternSelect.selectedIndex].text
+      ? patternSelect.options[patternSelect.selectedIndex]?.text || "This draft"
       : "This draft";
     showPreviewMessage(`${label} is coming soon.`);
     currentSvg = null;
     return;
   }
-  currentSvg = generateArmstrong(readParams());
+  if (selectedPattern === "aldrich") {
+    updateAldrichDerivedFields();
+  }
+  currentSvg = config.generate(config.readParams());
   preview.appendChild(currentSvg);
+}
+
+function ensurePatternSelection(patternKey) {
+  if (!patternSelect || patternSelect.value === patternKey) return;
+  patternSelect.value = patternKey;
+  patternSelect.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 const scheduleRegen = () => {
@@ -922,13 +1788,43 @@ function initApp() {
   patternPlaceholder = document.getElementById("patternPlaceholder");
   enhancePatternSelect();
   enhanceBustCupSelect();
-  const downloadButton = document.getElementById("download");
-  if (downloadButton) {
-    downloadButton.addEventListener("click", () => {
-      if (!currentSvg) regen();
-      if (currentSvg) downloadSVG(currentSvg, "armstrong_bodice.svg");
-    });
-  }
+  initAldrichAutoFields();
+  Object.entries(PATTERN_CONFIGS).forEach(([key, config]) => {
+    if (!config) return;
+    const downloadButton = config.downloadId ? document.getElementById(config.downloadId) : null;
+    if (downloadButton) {
+      downloadButton.addEventListener("click", () => {
+        ensurePatternSelection(key);
+        if (!currentSvg) regen();
+        if (currentSvg) downloadSVG(currentSvg, config.filename || `${key}.svg`);
+      });
+    }
+
+    const shareButton = config.shareId ? document.getElementById(config.shareId) : null;
+    if (shareButton) {
+      const defaultShareLabel = shareButton.textContent;
+      shareButton.addEventListener("click", async () => {
+        ensurePatternSelection(key);
+        const title = config.title || "Pattern Draft";
+        try {
+          if (navigator.share) {
+            await navigator.share({
+              title,
+              url: SHARE_URL || window.location.href,
+            });
+          } else if (navigator.clipboard) {
+            await navigator.clipboard.writeText(SHARE_URL || window.location.href);
+            shareButton.textContent = "Link Copied!";
+            setTimeout(() => (shareButton.textContent = defaultShareLabel), 1500);
+          } else {
+            window.open(SHARE_URL || window.location.href, "_blank");
+          }
+        } catch (err) {
+          console.error("Share failed:", err);
+        }
+      });
+    }
+  });
 
   document
     .querySelectorAll(".controls input, .controls select")
@@ -944,42 +1840,15 @@ function initApp() {
       }
     });
 
-  const shareButton = document.getElementById("share");
-  if (shareButton) {
-    shareButton.addEventListener("click", async () => {
-      try {
-        if (navigator.share) {
-          await navigator.share({
-            title: "Armstrong's Bodice",
-            url: SHARE_URL || window.location.href,
-          });
-        } else if (navigator.clipboard) {
-          await navigator.clipboard.writeText(SHARE_URL || window.location.href);
-          shareButton.textContent = "Link Copied!";
-          setTimeout(() => (shareButton.textContent = "Share"), 1500);
-        } else {
-          window.open(SHARE_URL || window.location.href, "_blank");
-        }
-      } catch (err) {
-        console.error("Share failed:", err);
-      }
-    });
-  }
-
   if (patternSelect) {
     patternSelect.addEventListener("change", () => {
-      const selectedValue = patternSelect.value;
       updatePatternVisibility();
-      if (selectedValue === "armstrong") {
-        regen();
-      }
+      regen();
     });
   }
 
   updatePatternVisibility();
-  if (!patternSelect || patternSelect.value === "armstrong") {
-    regen();
-  }
+  regen();
 }
 
 if (document.readyState === "loading") {
@@ -1221,26 +2090,33 @@ function enhanceBustCupSelect() {
 }
 
 function updatePatternVisibility() {
-  if (!patternSelect) {
-    if (patternPlaceholder) patternPlaceholder.hidden = true;
-    if (armstrongControls) armstrongControls.hidden = false;
+  const selectedValue = patternSelect ? patternSelect.value : "armstrong";
+  let hasVisibleSection = false;
+
+  Object.entries(PATTERN_CONFIGS).forEach(([key, config]) => {
+    const section = config.elementId ? document.getElementById(config.elementId) : null;
+    if (!section) return;
+    if (key === selectedValue) {
+      section.hidden = false;
+      hasVisibleSection = true;
+    } else {
+      section.hidden = true;
+    }
+  });
+
+  if (!patternPlaceholder) {
     return;
   }
 
-  const selectedValue = patternSelect.value;
-  if (selectedValue === "armstrong") {
-    if (armstrongControls) armstrongControls.hidden = false;
-    if (patternPlaceholder) patternPlaceholder.hidden = true;
+  if (hasVisibleSection) {
+    patternPlaceholder.hidden = true;
     return;
   }
 
-  if (armstrongControls) armstrongControls.hidden = true;
-  if (patternPlaceholder) patternPlaceholder.hidden = false;
+  patternPlaceholder.hidden = false;
   const label =
-    patternSelect.options[patternSelect.selectedIndex]?.text || "This draft";
-  const placeholderMessage = patternPlaceholder
-    ? patternPlaceholder.querySelector("p")
-    : null;
+    patternSelect?.options[patternSelect.selectedIndex]?.text || "This draft";
+  const placeholderMessage = patternPlaceholder.querySelector("p");
   if (placeholderMessage) {
     placeholderMessage.textContent = `${label} is coming soon.`;
   }
@@ -1316,4 +2192,132 @@ function showPreviewMessage(text) {
   msg.style.fontStyle = "italic";
   msg.style.margin = "24px";
   preview.appendChild(msg);
+}
+
+function computeAldrichFrontNeckDart(bust) {
+  if (!Number.isFinite(bust)) return 7;
+  const baseBustLow = 88;
+  const baseBustHigh = 110;
+  const baseLowValue = 7;
+  const baseHighValue = 10;
+  if (bust < baseBustLow) {
+    const diffLow = ((baseBustLow - bust) / 4) * 0.6;
+    return baseLowValue - diffLow;
+  }
+  if (bust <= 104) {
+    const diffMidLow = ((bust - baseBustLow) / 4) * 0.6;
+    return baseLowValue + diffMidLow;
+  }
+  if (bust <= baseBustHigh) {
+    const diffMidHigh = ((baseBustHigh - bust) / 6) * 0.6;
+    return baseHighValue - diffMidHigh;
+  }
+  const diffHigh = ((bust - baseBustHigh) / 6) * 0.6;
+  return baseHighValue + diffHigh;
+}
+
+function computeAldrichWaistDiff(bust, waist, bustEase, waistEase) {
+  if (!Number.isFinite(bust) || !Number.isFinite(waist)) return NaN;
+  let bustHalf = bust / 2;
+  let waistHalf = waist / 2;
+  if (Number.isFinite(bustEase)) bustHalf += bustEase;
+  if (Number.isFinite(waistEase)) waistHalf += waistEase;
+  return bustHalf - waistHalf;
+}
+
+function computeAldrichWaistDartsFromDiff(diff) {
+  if (!Number.isFinite(diff)) {
+    return { front: 0, back: 0, side: 0 };
+  }
+  const targetDiff = Math.abs(diff);
+  const x = (targetDiff - 6) / 4;
+  return {
+    front: x + 3,
+    back: x + 2,
+    side: 2 * x + 1,
+  };
+}
+
+function computeAldrichWaistDarts(bust, waist, bustEase, waistEase) {
+  const diff = computeAldrichWaistDiff(bust, waist, bustEase, waistEase);
+  return computeAldrichWaistDartsFromDiff(diff);
+}
+
+function computeAldrichPointADistance(bust) {
+  if (!Number.isFinite(bust)) return 2.5;
+  if (bust <= 80) return 2.25;
+  if (bust >= 96 && bust <= 106) return 3;
+  if (bust > 106 && bust <= 128) return 3.5;
+  if (bust > 80 && bust <= 99) return 2.5;
+  return 3.5;
+}
+
+function computeAldrichPointBDistance(bust) {
+  if (!Number.isFinite(bust)) return 2;
+  if (bust <= 80) return 1.75;
+  if (bust >= 96 && bust <= 106) return 2.5;
+  if (bust > 106 && bust <= 128) return 3;
+  if (bust > 80 && bust <= 99) return 2.0;
+  return 3;
+}
+
+function clampHandleToChordCm(baseXcm, baseYcm, chordCm, ratio = ALDRICH_HANDLE_RATIO_CAP) {
+  const baseLen = Math.hypot(baseXcm, baseYcm);
+  if (!Number.isFinite(chordCm) || chordCm <= 0) {
+    return { x: 0, y: 0 };
+  }
+  if (!Number.isFinite(baseLen) || baseLen < 0.0001) {
+    return { x: baseXcm, y: baseYcm };
+  }
+  const maxLen = chordCm * ratio;
+  if (maxLen >= baseLen) {
+    return { x: baseXcm, y: baseYcm };
+  }
+  const scale = maxLen / baseLen;
+  return {
+    x: baseXcm * scale,
+    y: baseYcm * scale,
+  };
+}
+
+function distanceBetween(a, b) {
+  if (!a || !b) return 0;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return Math.hypot(dx, dy);
+}
+
+function midpoint(a, b) {
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  };
+}
+
+function isFiniteNumber(val) {
+  return typeof val === "number" && Number.isFinite(val);
+}
+
+function intersectLineWithVertical(lineStart, lineEnd, xConst) {
+  if (!lineStart || !lineEnd || !isFiniteNumber(xConst)) {
+    return null;
+  }
+  const dx = lineEnd.x - lineStart.x;
+  if (Math.abs(dx) < 0.000001) {
+    return null;
+  }
+  const t = (xConst - lineStart.x) / dx;
+  if (t < -0.0001 || t > 1.0001) {
+    return null;
+  }
+  return {
+    x: xConst,
+    y: lineStart.y + t * (lineEnd.y - lineStart.y),
+  };
+}
+
+function valueBetween(val, a, b, tolerance = 0.0001) {
+  const minVal = Math.min(a, b) - tolerance;
+  const maxVal = Math.max(a, b) + tolerance;
+  return val >= minVal && val <= maxVal;
 }

@@ -11,7 +11,7 @@ body {
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(320px, 420px) 1fr;
+  grid-template-columns: minmax(320px, 480px) 1fr;
 }
 
 .controls {
@@ -23,6 +23,10 @@ body {
 .controls h1 {
   margin: 0 0 4px;
   font-size: 1.4rem;
+}
+
+.pattern-section + .pattern-section {
+  margin-top: 32px;
 }
 
 .pattern-picker {
@@ -371,6 +375,16 @@ button:hover,
   align-items: center;
   gap: 6px;
   color: #1e293b;
+}
+
+.toggles.inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.toggles.inline label {
+  flex: 1 1 200px;
 }
 
 .preview-pane {

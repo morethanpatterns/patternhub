@@ -12,8 +12,8 @@
         <label>Digital Patternmaking Drafts
           <select id="patternSelect">
             <option value="armstrong" selected>Armstrong's Bodice</option>
+            <option value="aldrich">Aldrich's Close Fitting Bodice</option>
             <optgroup label="Almost Ready">
-              <option value="aldrich" disabled>Aldrich's Close Fitting Bodice (Coming Soon)</option>
               <option value="hofenbitzer-trouser" disabled>Hofenbitzer's Standard Trouser (Coming Soon)</option>
               <option value="hofenbitzer-casual-bodice" disabled>Hofenbitzer's Casual Bodice (Coming Soon)</option>
               <option value="hofenbitzer-contoured-bodice" disabled>Hofenbitzer's Contoured Bodice (Coming Soon)</option>
@@ -26,8 +26,7 @@
           </select>
         </label>
       </div>
-
-      <div id="armstrongControls">
+      <div id="armstrongControls" class="pattern-section">
         <h1>Armstrong's Bodice <span class="beta-tag">Beta</span></h1>
         <p class="hint">All measurements are in inches. Defaults reference the size 12 block from <a href="https://archive.org/details/patternmakingfor0000jose_f0p5" target="_blank" rel="noopener">Armstrong's book</a> - please have it handy when entering your own measurements. Convert fractional values (1/2, 1/8, etc.) to decimals before entering them.</p>
         <p class="note">Need help or want to request a draft? Join the <a href="https://discord.gg/CFvfXfZUTa" target="_blank" rel="noopener">Discord community</a>.</p>
@@ -125,6 +124,91 @@
         <div class="toggles">
           <label><input id="showGuides" type="checkbox" checked>Show Construction Lines</label>
           <label><input id="showMarkers" type="checkbox" checked>Show Markers and Letters</label>
+        </div>
+      </div>
+
+      <div id="aldrichControls" class="pattern-section" hidden>
+        <h1>Aldrich's Close Fitting Bodice <span class="beta-tag">Beta</span></h1>
+        <p class="hint">All measurements are in centimeters. Defaults mirror the close fitting block from Winifred Aldrich's <a href="https://archive.org/details/MetricPatternCutting" target="_blank" rel="noopener">Metric Pattern Cutting for Women's Wear</a>.</p>
+        <p class="note">Need help or want to request a draft? Join the <a href="https://discord.gg/CFvfXfZUTa" target="_blank" rel="noopener">Discord community</a>.</p>
+
+        <div class="form-grid">
+          <label>1. Bust
+            <input id="aldrichBust" type="number" value="88" step="0.1">
+          </label>
+          <label>Bust Ease
+            <input id="aldrichBustEase" type="number" value="5" step="0.1">
+          </label>
+          <label>2. Waist
+            <input id="aldrichWaist" type="number" value="68" step="0.1">
+          </label>
+          <label>Waist Ease
+            <input id="aldrichWaistEase" type="number" value="3" step="0.1">
+          </label>
+          <label>3. Hip
+            <input id="aldrichHip" type="number" value="94" step="0.1">
+          </label>
+          <label>7. Waist to Hip
+            <input id="aldrichWaistToHip" type="number" value="20.6" step="0.1">
+          </label>
+          <label>4. Nape to Waist
+            <input id="aldrichNapeToWaist" type="number" value="41" step="0.1">
+          </label>
+          <label>5. Shoulder
+            <input id="aldrichShoulder" type="number" value="12.25" step="0.1">
+          </label>
+          <label>6. Back Width
+            <input id="aldrichBackWidth" type="number" value="34.4" step="0.1">
+          </label>
+          <label>9. Chest
+            <input id="aldrichChest" type="number" value="32.4" step="0.1">
+          </label>
+          <label>8. Armscye Depth
+            <input id="aldrichArmscyeDepth" type="number" value="21" step="0.1">
+          </label>
+          <label>10. Neck Size
+            <input id="aldrichNeckSize" type="number" value="37" step="0.1">
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label>Front Neck Dart
+            <input id="aldrichFrontNeckDart" type="number" value="7" step="0.1">
+          </label>
+          <label>Front Waist Dart
+            <input id="aldrichFrontWaistDart" type="number" value="4.5" step="0.1">
+          </label>
+          <label>Back Waist Dart
+            <input id="aldrichBackWaistDart" type="number" value="3.5" step="0.1">
+          </label>
+          <label>Side Waist Darts
+            <input id="aldrichSideWaistDart" type="number" value="4" step="0.1">
+          </label>
+          <label>Dart Apex Offset
+            <input id="aldrichFrontWaistDartBackOff" type="number" value="2.5" step="0.1">
+          </label>
+          <label>Bust-Waist Difference
+            <input id="aldrichBustWaistDiff" type="number" value="12" step="0.1">
+          </label>
+        </div>
+
+        <div class="toggles inline">
+          <label><input id="aldrichCloseWaist" type="checkbox" checked>Close Waist Shaping</label>
+          <label><input id="aldrichReducedDarting" type="checkbox">Reduced Darting (75%)</label>
+        </div>
+
+        <div class="actions">
+          <button id="downloadAldrich" type="button">Download SVG</button>
+        </div>
+
+        <div class="actions secondary">
+          <button id="shareAldrich" type="button" class="link-button">Share Link</button>
+          <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
+        </div>
+
+        <div class="toggles">
+          <label><input id="aldrichShowGuides" type="checkbox" checked>Show Construction Lines</label>
+          <label><input id="aldrichShowMarkers" type="checkbox" checked>Show Markers and Letters</label>
         </div>
       </div>
 
