@@ -90,24 +90,48 @@
   }
 
   function computeWaistDiff(bust, waist, bustEase, waistEase) {
-    if (isNaN(bust) || isNaN(waist)) return NaN
-    var bustHalf = bust / 2
-    var waistHalf = waist / 2
-    if (!isNaN(bustEase)) bustHalf += bustEase
-    if (!isNaN(waistEase)) waistHalf += waistEase
-    return bustHalf - waistHalf
+    if (!isFiniteNumber(bust) || !isFiniteNumber(waist)) {
+      return NaN
+    }
+    // Aldrich: (bust / 2 + bust ease) - (waist / 2 + waist ease)
+    var bustComponent = bust / 2
+    var waistComponent = waist / 2
+    if (isFiniteNumber(bustEase)) {
+      bustComponent += bustEase
+    }
+    if (isFiniteNumber(waistEase)) {
+      waistComponent += waistEase
+    }
+    return bustComponent - waistComponent
   }
 
-  function computeWaistDartsFromDiff(diff) {
+  function computeWaistDartsFromDiff(diff, options) {
+    options = options || {}
     if (!isFinite(diff)) {
-      return { front: 0, back: 0, side: 0 }
+      return { front: 0, back: 0, frontSide: 0, backSide: 0 }
     }
-    var targetDiff = Math.abs(diff)
-    var x = (targetDiff - 6) / 4
+    var waistDifference = Math.abs(diff)
+    if (options.reduced) {
+      waistDifference *= 0.75
+    }
+    var subtractBase = options.reduced ? 5 : 6
+    var x = (waistDifference - subtractBase) / 4
+    if (!isFinite(x) || x < 0) {
+      x = 0
+    }
+    if (options.reduced) {
+      return {
+        backSide: x,
+        frontSide: x + 1,
+        back: x + 1.5,
+        front: x + 2.5,
+      }
+    }
     return {
-      front: x + 3,
+      backSide: x,
+      frontSide: x + 1,
       back: x + 2,
-      side: 2 * x + 1,
+      front: x + 3,
     }
   }
 
@@ -308,9 +332,13 @@
         'Back Waist Dart (cm)',
         formatNumber(defaults.backWaistDart),
       ),
-      sideWaistDart: addField(
-        'Side Waist Darts (cm)',
-        formatNumber(defaults.sideWaistDart),
+      frontSideWaistDart: addField(
+        'Front Side Waist Dart (cm)',
+        formatNumber(defaults.frontSideWaistDart),
+      ),
+      backSideWaistDart: addField(
+        'Back Side Waist Dart (cm)',
+        formatNumber(defaults.backSideWaistDart),
       ),
       frontWaistDartBackOff: addField(
         'Dart Apex Offset (cm)',
@@ -348,10 +376,6 @@
       closeWaistToggle.value = false
     } else if (!closeWaistToggle.value) {
       closeWaistToggle.value = true
-    }
-
-    function getDartReductionFactor() {
-      return reducedDartToggle.value ? 0.75 : 1
     }
 
     function refreshWaistDistribution() {
@@ -402,7 +426,8 @@
     var waistDartManuallyEdited = {
       front: false,
       back: false,
-      side: false,
+      sideFront: false,
+      sideBack: false,
     }
     var waistDiffManuallyEdited = false
 
@@ -415,39 +440,49 @@
       return (
         waistDartManuallyEdited.front ||
         waistDartManuallyEdited.back ||
-        waistDartManuallyEdited.side
+        waistDartManuallyEdited.sideFront ||
+        waistDartManuallyEdited.sideBack
       )
     }
 
     function updateBustWaistDiffFromDarts() {
-      var frontVal = getFieldNumber(fields.frontWaistDart)
-      var backVal = getFieldNumber(fields.backWaistDart)
-      var sideVal = getFieldNumber(fields.sideWaistDart)
-      if (isNaN(frontVal) || isNaN(backVal) || isNaN(sideVal)) return
-      var diffSum = frontVal + backVal + sideVal
-      fields.bustWaistDiff.text = formatNumber(Math.abs(diffSum))
+      var bustValue = getFieldNumber(fields.bust)
+      var waistValue = getFieldNumber(fields.waist)
+      var bustEaseValue = getFieldNumber(fields.bustEase)
+      var waistEaseValue = getFieldNumber(fields.waistEase)
+      var diff = computeWaistDiff(
+        bustValue,
+        waistValue,
+        bustEaseValue,
+        waistEaseValue,
+      )
+      if (isNaN(diff)) return
+      fields.bustWaistDiff.text = formatNumber(Math.abs(diff))
     }
 
     function applyDartDistribution(diff, options) {
       options = options || {}
-      var darts = computeWaistDartsFromDiff(diff)
-      var factor = getDartReductionFactor()
-      var adjustedFront = darts.front * factor
-      var adjustedBack = darts.back * factor
-      var adjustedSide = darts.side * factor
-      var distributedTotal = adjustedFront + adjustedBack + adjustedSide
+      var useReduced = !!reducedDartToggle.value
+      var darts = computeWaistDartsFromDiff(diff, { reduced: useReduced })
+      var frontValue = darts.front
+      var backValue = darts.back
+      var frontSideValue = darts.frontSide
+      var backSideValue = darts.backSide
       if (options.force || !waistDartManuallyEdited.front)
-        fields.frontWaistDart.text = formatNumber(adjustedFront)
+        fields.frontWaistDart.text = formatNumber(frontValue)
       if (options.force || !waistDartManuallyEdited.back)
-        fields.backWaistDart.text = formatNumber(adjustedBack)
-      if (options.force || !waistDartManuallyEdited.side)
-        fields.sideWaistDart.text = formatNumber(adjustedSide)
-      if (!options.skipDiffField)
-        fields.bustWaistDiff.text = formatNumber(Math.abs(distributedTotal))
+        fields.backWaistDart.text = formatNumber(backValue)
+      if (options.force || !waistDartManuallyEdited.sideFront)
+        fields.frontSideWaistDart.text = formatNumber(frontSideValue)
+      if (options.force || !waistDartManuallyEdited.sideBack)
+        fields.backSideWaistDart.text = formatNumber(backSideValue)
+      if (!options.skipDiffField && isFinite(diff))
+        fields.bustWaistDiff.text = formatNumber(Math.abs(diff))
       if (options.resetManualDarts) {
         waistDartManuallyEdited.front = false
         waistDartManuallyEdited.back = false
-        waistDartManuallyEdited.side = false
+        waistDartManuallyEdited.sideFront = false
+        waistDartManuallyEdited.sideBack = false
       }
     }
 
@@ -543,11 +578,18 @@
       markWaistDartManual('back')
       updateBustWaistDiffFromDarts()
     }
-    fields.sideWaistDart.onChanging = function () {
-      markWaistDartManual('side')
+    fields.frontSideWaistDart.onChanging = function () {
+      markWaistDartManual('sideFront')
     }
-    fields.sideWaistDart.onChange = function () {
-      markWaistDartManual('side')
+    fields.frontSideWaistDart.onChange = function () {
+      markWaistDartManual('sideFront')
+      updateBustWaistDiffFromDarts()
+    }
+    fields.backSideWaistDart.onChanging = function () {
+      markWaistDartManual('sideBack')
+    }
+    fields.backSideWaistDart.onChange = function () {
+      markWaistDartManual('sideBack')
       updateBustWaistDiffFromDarts()
     }
     fields.bustWaistDiff.onChanging = function () {
@@ -595,7 +637,14 @@
           frontNeckDart: readValue(fields.frontNeckDart, 'Front Neck Dart'),
           frontWaistDart: readValue(fields.frontWaistDart, 'Front Waist Dart'),
           backWaistDart: readValue(fields.backWaistDart, 'Back Waist Dart'),
-          sideWaistDart: readValue(fields.sideWaistDart, 'Side Waist Darts'),
+          frontSideWaistDart: readValue(
+            fields.frontSideWaistDart,
+            'Front Side Waist Dart',
+          ),
+          backSideWaistDart: readValue(
+            fields.backSideWaistDart,
+            'Back Side Waist Dart',
+          ),
           frontWaistDartBackOff: readValue(
             fields.frontWaistDartBackOff,
             'Dart Apex Offset',
@@ -668,7 +717,8 @@
       { label: 'Front Neck Dart', key: 'frontNeckDart' },
       { label: 'Front Waist Dart', key: 'frontWaistDart' },
       { label: 'Back Waist Dart', key: 'backWaistDart' },
-      { label: 'Side Waist Darts', key: 'sideWaistDart' },
+      { label: 'Front Side Waist Dart', key: 'frontSideWaistDart' },
+      { label: 'Back Side Waist Dart', key: 'backSideWaistDart' },
       { label: 'Dart Apex Offset', key: 'frontWaistDartBackOff' },
       { label: 'Bust-Waist Difference', key: 'bustWaistDiff' },
       { label: 'Close Waist Shaping', key: 'closeWaistShaping', type: 'boolean' },
@@ -1203,7 +1253,8 @@
     frontWaistDart: 0,
     frontWaistDartBackOff: 2.5,
     backWaistDart: 0,
-    sideWaistDart: 0,
+    frontSideWaistDart: 0,
+    backSideWaistDart: 0,
     bustWaistDiff: 0,
     armscyeDepth: 21,
     chest: 32.4,
@@ -1233,7 +1284,8 @@
   )
   defaultMeasurements.frontWaistDart = defaultWaistDarts.front
   defaultMeasurements.backWaistDart = defaultWaistDarts.back
-  defaultMeasurements.sideWaistDart = defaultWaistDarts.side
+  defaultMeasurements.frontSideWaistDart = defaultWaistDarts.frontSide
+  defaultMeasurements.backSideWaistDart = defaultWaistDarts.backSide
 
   var measurements = showMeasurementDialog(defaultMeasurements)
   if (!measurements) {
@@ -2179,11 +2231,34 @@
       if (trimmedFrontDart.label) items.push(trimmedFrontDart.label)
     }
   }
-  if (points['f']) {
+  var waistDropStart = points['5']
+  var waistDropEnd = points['c']
+  var waistLineOptions = waistDropStart && waistDropEnd ? { start: waistDropStart, end: waistDropEnd } : null
+  function waistLinePointAtX(x) {
+    if (!waistLineOptions) {
+      return { x: x, y: points['2'] ? points['2'].y : 0 }
+    }
+    var deltaX = waistLineOptions.end.x - waistLineOptions.start.x
+    if (Math.abs(deltaX) < 0.0001) {
+      return { x: x, y: waistLineOptions.start.y }
+    }
+    var slope = (waistLineOptions.end.y - waistLineOptions.start.y) / deltaX
+    var y = waistLineOptions.start.y + slope * (x - waistLineOptions.start.x)
+    return { x: x, y: y }
+  }
+  if (points['32'] && waistLineOptions) {
+    var waistAxisPointRaw = intersectLineWithVertical(
+      waistLineOptions.start,
+      waistLineOptions.end,
+      points['32'].x,
+    )
+    var waistAxisPoint = waistAxisPointRaw
+      ? waistAxisPointRaw
+      : waistLinePointAtX(points['32'].x)
     var trimmedPrincessOptions = buildLineOptions(
       'Side',
       points['32'],
-      points['f'],
+      waistAxisPoint,
     )
     trimmedPrincessOptions.dashed = true
     trimmedPrincessOptions.labelText = null
@@ -2193,34 +2268,31 @@
       originX,
       originY,
       points['32'],
-      points['f'],
+      waistAxisPoint,
       trimmedPrincessOptions,
     )
     if (trimmedPrincessLine.path) items.push(trimmedPrincessLine.path)
     if (trimmedPrincessLine.label) items.push(trimmedPrincessLine.label)
-    if (points['32']) {
-      var sideWaistDartWidth = measurements.sideWaistDart
-      if (isFiniteNumber(sideWaistDartWidth) && sideWaistDartWidth > 0.0001) {
-        var sideOffset = (sideWaistDartWidth - 1) / 2
-        if (!isFiniteNumber(sideOffset) || sideOffset < 0) {
-          sideOffset = sideWaistDartWidth / 2
-        }
-        var sideLeftBase = { x: points['f'].x - sideOffset, y: points['f'].y }
-        var sideRightBase = { x: points['f'].x + sideOffset, y: points['f'].y }
-        var sideApex = { x: points['32'].x, y: points['32'].y }
+    var frontSideWidth = measurements.frontSideWaistDart
+    var backSideWidth = measurements.backSideWaistDart
+    var hasFrontSideDart =
+      isFiniteNumber(frontSideWidth) && frontSideWidth > 0.0001
+    var hasBackSideDart =
+      isFiniteNumber(backSideWidth) && backSideWidth > 0.0001
+    if (hasFrontSideDart || hasBackSideDart) {
+      var sideApex = { x: points['32'].x, y: points['32'].y }
+      var sideLeftDart = null
+      var sideRightDart = null
+      var frontSideGuide = null
+      if (hasBackSideDart) {
+        var sideLeftBase = waistLinePointAtX(waistAxisPoint.x - backSideWidth)
         var sideLeftOptions = buildLineOptions(
           'Back Side Waist Dart',
           sideLeftBase,
           sideApex,
         )
         sideLeftOptions.labelText = null
-        var sideRightOptions = buildLineOptions(
-          'Front Side Waist Dart',
-          sideRightBase,
-          sideApex,
-        )
-        sideRightOptions.labelText = null
-        var sideLeftDart = drawLine(
+        sideLeftDart = drawLine(
           backDraftGroup,
           labelsGroup,
           originX,
@@ -2229,7 +2301,40 @@
           sideApex,
           sideLeftOptions,
         )
-        var sideRightDart = drawLine(
+        if (points['5']) {
+          var backWaistLineOptions = buildLineOptions(
+            'Back Waist Line',
+            points['5'],
+            sideLeftBase,
+          )
+          backWaistLineOptions.labelText = null
+          var backWaistLine = drawLine(
+            backDraftGroup,
+            labelsGroup,
+            originX,
+            originY,
+            points['5'],
+            sideLeftBase,
+            backWaistLineOptions,
+          )
+          if (backWaistLine && backWaistLine.path) {
+            backWaistLine.path.strokeDashes = []
+            items.push(backWaistLine.path)
+            if (backWaistLine.label) items.push(backWaistLine.label)
+          }
+        }
+      }
+      if (hasFrontSideDart) {
+        var sideRightBase = waistLinePointAtX(
+          waistAxisPoint.x + frontSideWidth,
+        )
+        var sideRightOptions = buildLineOptions(
+          'Front Side Waist Dart',
+          sideRightBase,
+          sideApex,
+        )
+        sideRightOptions.labelText = null
+        sideRightDart = drawLine(
           frontDraftGroup,
           labelsGroup,
           originX,
@@ -2238,53 +2343,36 @@
           sideApex,
           sideRightOptions,
         )
-        var frontSideGuideOptions = buildLineOptions(
-          'Front Waist Line',
-          points['c'],
-          sideRightBase,
-        )
-        frontSideGuideOptions.labelText = null
-        var frontSideGuide = drawLine(
-          frontDraftGroup,
-          labelsGroup,
-          originX,
-          originY,
-          points['c'],
-          sideRightBase,
-          frontSideGuideOptions,
-        )
-        if (frontSideGuide && frontSideGuide.path) {
-          frontSideGuide.path.strokeDashes = []
-          items.push(frontSideGuide.path)
-          if (frontSideGuide.label) items.push(frontSideGuide.label)
+        if (points['c']) {
+          var frontSideGuideOptions = buildLineOptions(
+            'Front Waist Line',
+            points['c'],
+            sideRightBase,
+          )
+          frontSideGuideOptions.labelText = null
+          frontSideGuide = drawLine(
+            frontDraftGroup,
+            labelsGroup,
+            originX,
+            originY,
+            points['c'],
+            sideRightBase,
+            frontSideGuideOptions,
+          )
         }
-        var backSideGuideOptions = buildLineOptions(
-          'Back Waist Line',
-          point5,
-          sideLeftBase,
-        )
-        backSideGuideOptions.labelText = null
-        var backSideGuide = drawLine(
-          backDraftGroup,
-          labelsGroup,
-          originX,
-          originY,
-          point5,
-          sideLeftBase,
-          backSideGuideOptions,
-        )
-        if (backSideGuide && backSideGuide.path) {
-          backSideGuide.path.strokeDashes = []
-          items.push(backSideGuide.path)
-          if (backSideGuide.label) items.push(backSideGuide.label)
-        }
-        if (sideLeftDart.path) items.push(sideLeftDart.path)
-        if (sideRightDart.path) items.push(sideRightDart.path)
-        if (sideLeftDart.label) items.push(sideLeftDart.label)
-        if (sideRightDart.label) items.push(sideRightDart.label)
       }
+      if (frontSideGuide && frontSideGuide.path) {
+        frontSideGuide.path.strokeDashes = []
+        items.push(frontSideGuide.path)
+        if (frontSideGuide.label) items.push(frontSideGuide.label)
+      }
+      if (sideLeftDart && sideLeftDart.path) items.push(sideLeftDart.path)
+      if (sideRightDart && sideRightDart.path) items.push(sideRightDart.path)
+      if (sideLeftDart && sideLeftDart.label) items.push(sideLeftDart.label)
+      if (sideRightDart && sideRightDart.label) items.push(sideRightDart.label)
     }
   }
+
   if (points['d'] && points['17']) {
     var backWaistDartWidth = measurements.backWaistDart
     if (isFiniteNumber(backWaistDartWidth) && backWaistDartWidth > 0.0001) {
