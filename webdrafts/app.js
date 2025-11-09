@@ -38,6 +38,8 @@ const baseAldrichDefaults = {
   chest: 32.4,
   neckSize: 37,
   frontWaistDartBackOff: 2.5,
+  frontSideWaistDart: 0,
+  backSideWaistDart: 0,
 };
 const ALDRICH_DEFAULT_FRONT_NECK_DART = computeAldrichFrontNeckDart(baseAldrichDefaults.bust);
 const ALDRICH_DEFAULT_DARTS = computeAldrichWaistDarts(
@@ -51,7 +53,8 @@ const ALDRICH_DEFAULTS = Object.freeze({
   frontNeckDart: ALDRICH_DEFAULT_FRONT_NECK_DART,
   frontWaistDart: ALDRICH_DEFAULT_DARTS.front,
   backWaistDart: ALDRICH_DEFAULT_DARTS.back,
-  sideWaistDart: ALDRICH_DEFAULT_DARTS.side,
+  frontSideWaistDart: ALDRICH_DEFAULT_DARTS.frontSide,
+  backSideWaistDart: ALDRICH_DEFAULT_DARTS.backSide,
   bustWaistDiff: Math.abs(
     computeAldrichWaistDiff(
       baseAldrichDefaults.bust,
@@ -1046,8 +1049,7 @@ function generateAldrich(params) {
     y: points["22"].y + ((points["21"].y - points["3"].y) / 3),
   });
   drawSegment(layers.foundation, points["5"], pointC, {
-    dashed: true,
-    color: ALDRICH_COLORS.guide,
+    color: ALDRICH_COLORS.primary,
     name: "Waist Drop Guide",
   });
   drawSegment(layers.foundation, points["2"], points["3"], {
@@ -1358,37 +1360,79 @@ function generateAldrich(params) {
     });
   }
 
-  if (points["f"]) {
-    drawSegment(layers.foundation, points["32"], points["f"], {
+  const waistLineStart = points["5"];
+  const waistLineEnd = pointC;
+  const waistLineMinX =
+    waistLineStart && waistLineEnd ? Math.min(waistLineStart.x, waistLineEnd.x) : null;
+  const waistLineMaxX =
+    waistLineStart && waistLineEnd ? Math.max(waistLineStart.x, waistLineEnd.x) : null;
+
+  const clampWaistX = (x) => {
+    if (waistLineMinX == null || waistLineMaxX == null || !Number.isFinite(x)) return x;
+    const minX = Math.min(waistLineMinX, waistLineMaxX);
+    const maxX = Math.max(waistLineMinX, waistLineMaxX);
+    if (x < minX) return minX;
+    if (x > maxX) return maxX;
+    return x;
+  };
+
+  const waistLinePointAtX = (x) => {
+    if (!waistLineStart || !waistLineEnd) return null;
+    const deltaX = waistLineEnd.x - waistLineStart.x;
+    if (Math.abs(deltaX) < 0.0001) {
+      return { x, y: waistLineStart.y };
+    }
+    const slope = (waistLineEnd.y - waistLineStart.y) / deltaX;
+    return {
+      x,
+      y: waistLineStart.y + slope * (x - waistLineStart.x),
+    };
+  };
+
+  const waistAxisPoint =
+    points["f"] ||
+    (points["32"] && Number.isFinite(points["32"].x)
+      ? waistLinePointAtX(clampWaistX(points["32"].x))
+      : waistLineStart && waistLineEnd
+      ? waistLinePointAtX(waistLineStart.x)
+      : null);
+
+  if (waistAxisPoint && points["32"]) {
+    drawSegment(layers.foundation, points["32"], waistAxisPoint, {
       dashed: true,
       color: ALDRICH_COLORS.guide,
       name: "Side",
     });
-    if (points["32"]) {
-      const sideWaistDartWidth = params.sideWaistDart;
-      if (Number.isFinite(sideWaistDartWidth) && sideWaistDartWidth > 0) {
-        let sideOffset = (sideWaistDartWidth - 1) / 2;
-        if (!Number.isFinite(sideOffset) || sideOffset < 0) {
-          sideOffset = sideWaistDartWidth / 2;
-        }
-        const sideLeftBase = { x: points["f"].x - sideOffset, y: points["f"].y };
-        const sideRightBase = { x: points["f"].x + sideOffset, y: points["f"].y };
-        const sideApex = { x: points["32"].x, y: points["32"].y };
-        drawSegment(layers.back, sideLeftBase, sideApex, {
-          color: ALDRICH_COLORS.primary,
-          name: "Back Side Waist Dart",
-        });
-        drawSegment(layers.front, sideRightBase, sideApex, {
-          color: ALDRICH_COLORS.primary,
-          name: "Front Side Waist Dart",
-        });
-        drawSegment(layers.front, pointC, sideRightBase, {
-          color: ALDRICH_COLORS.primary,
-          name: "Front Waist Line",
-        });
+    const sideApex = { x: points["32"].x, y: points["32"].y };
+
+    const backSideWidth = params.backSideWaistDart;
+    if (Number.isFinite(backSideWidth) && backSideWidth > 0) {
+      const baseX = clampWaistX(waistAxisPoint.x - backSideWidth);
+      const sideLeftBase = waistLinePointAtX(baseX) || { x: baseX, y: waistAxisPoint.y };
+      drawSegment(layers.back, sideLeftBase, sideApex, {
+        color: ALDRICH_COLORS.primary,
+        name: "Back Side Waist Dart",
+      });
+      if (points["5"]) {
         drawSegment(layers.back, points["5"], sideLeftBase, {
           color: ALDRICH_COLORS.primary,
           name: "Back Waist Line",
+        });
+      }
+    }
+
+    const frontSideWidth = params.frontSideWaistDart;
+    if (Number.isFinite(frontSideWidth) && frontSideWidth > 0) {
+      const baseX = clampWaistX(waistAxisPoint.x + frontSideWidth);
+      const sideRightBase = waistLinePointAtX(baseX) || { x: baseX, y: waistAxisPoint.y };
+      drawSegment(layers.front, sideRightBase, sideApex, {
+        color: ALDRICH_COLORS.primary,
+        name: "Front Side Waist Dart",
+      });
+      if (pointC) {
+        drawSegment(layers.front, pointC, sideRightBase, {
+          color: ALDRICH_COLORS.primary,
+          name: "Front Waist Line",
         });
       }
     }
@@ -1524,7 +1568,8 @@ function readAldrichParams() {
     frontNeckDart: getNumber("aldrichFrontNeckDart", ALDRICH_DEFAULTS.frontNeckDart),
     frontWaistDart: getNumber("aldrichFrontWaistDart", ALDRICH_DEFAULTS.frontWaistDart),
     backWaistDart: getNumber("aldrichBackWaistDart", ALDRICH_DEFAULTS.backWaistDart),
-    sideWaistDart: getNumber("aldrichSideWaistDart", ALDRICH_DEFAULTS.sideWaistDart),
+    frontSideWaistDart: getNumber("aldrichFrontSideWaistDart", ALDRICH_DEFAULTS.frontSideWaistDart),
+    backSideWaistDart: getNumber("aldrichBackSideWaistDart", ALDRICH_DEFAULTS.backSideWaistDart),
     frontWaistDartBackOff: getNumber(
       "aldrichFrontWaistDartBackOff",
       ALDRICH_DEFAULTS.frontWaistDartBackOff
@@ -1552,28 +1597,39 @@ function getAldrichReductionFactor() {
 }
 
 function applyAldrichDartDistribution(diff, options = {}) {
-  const darts = computeAldrichWaistDartsFromDiff(diff);
-  const factor = getAldrichReductionFactor();
-  const frontValue = darts.front * factor;
-  const backValue = darts.back * factor;
-  const sideValue = darts.side * factor;
+  const reducedToggle = document.getElementById("aldrichReducedDarting");
+  const useReduced = reducedToggle && reducedToggle.checked;
+  const darts = computeAldrichWaistDartsFromDiff(diff, { reduced: useReduced });
+  const { front = 0, back = 0, frontSide = 0, backSide = 0 } = darts;
   const force = options.force === true;
+  const skipDiffField = options.skipDiffField === true;
+  const resetDartFlags = options.resetDartFlags === true || options.resetManual === true;
+  const resetDiffFlag = options.resetDiffFlag === true || options.resetManual === true;
 
   if (force || !aldrichAutoState.frontWaistDartEdited) {
-    setInputNumber("aldrichFrontWaistDart", frontValue);
-    if (options.resetManual) aldrichAutoState.frontWaistDartEdited = false;
+    setInputNumber("aldrichFrontWaistDart", front);
   }
   if (force || !aldrichAutoState.backWaistDartEdited) {
-    setInputNumber("aldrichBackWaistDart", backValue);
-    if (options.resetManual) aldrichAutoState.backWaistDartEdited = false;
+    setInputNumber("aldrichBackWaistDart", back);
   }
-  if (force || !aldrichAutoState.sideWaistDartEdited) {
-    setInputNumber("aldrichSideWaistDart", sideValue);
-    if (options.resetManual) aldrichAutoState.sideWaistDartEdited = false;
+  if (force || !aldrichAutoState.frontSideWaistDartEdited) {
+    setInputNumber("aldrichFrontSideWaistDart", frontSide);
   }
-  if (!options.skipDiffField && (force || !aldrichAutoState.bustWaistDiffEdited)) {
+  if (force || !aldrichAutoState.backSideWaistDartEdited) {
+    setInputNumber("aldrichBackSideWaistDart", backSide);
+  }
+  if (!skipDiffField && (force || !aldrichAutoState.bustWaistDiffEdited) && Number.isFinite(diff)) {
     setInputNumber("aldrichBustWaistDiff", Math.abs(diff));
-    if (options.resetManual) aldrichAutoState.bustWaistDiffEdited = false;
+  }
+
+  if (resetDartFlags) {
+    aldrichAutoState.frontWaistDartEdited = false;
+    aldrichAutoState.backWaistDartEdited = false;
+    aldrichAutoState.frontSideWaistDartEdited = false;
+    aldrichAutoState.backSideWaistDartEdited = false;
+  }
+  if (resetDiffFlag) {
+    aldrichAutoState.bustWaistDiffEdited = false;
   }
 }
 
@@ -1583,19 +1639,22 @@ function updateAldrichDerivedFields(options = {}) {
   const bustEase = getNumber("aldrichBustEase", ALDRICH_DEFAULTS.bustEase);
   const waistEase = getNumber("aldrichWaistEase", ALDRICH_DEFAULTS.waistEase);
   const force = options.force === true;
+  const resetManual = options.resetManual === true;
+  if (resetManual) {
+    aldrichAutoState.frontNeckDartEdited = false;
+    aldrichAutoState.bustWaistDiffEdited = false;
+  }
   const frontNeck = computeAldrichFrontNeckDart(bust);
-  if (Number.isFinite(frontNeck)) {
-    if (force || !aldrichAutoState.frontNeckDartEdited) {
-      setInputNumber("aldrichFrontNeckDart", frontNeck);
-      if (options.resetManual) aldrichAutoState.frontNeckDartEdited = false;
-    }
+  if (Number.isFinite(frontNeck) && (force || !aldrichAutoState.frontNeckDartEdited)) {
+    setInputNumber("aldrichFrontNeckDart", frontNeck);
   }
   const diff = computeAldrichWaistDiff(bust, waist, bustEase, waistEase);
-  if (Number.isFinite(diff)) {
+  const manualDiffLocked = aldrichAutoState.bustWaistDiffEdited && !resetManual;
+  if (Number.isFinite(diff) && !manualDiffLocked) {
     applyAldrichDartDistribution(diff, {
       force,
-      resetManual: options.resetManual,
-      skipDiffField: false,
+      resetDartFlags: resetManual,
+      resetDiffFlag: resetManual,
     });
   }
 }
@@ -1625,16 +1684,24 @@ function initAldrichAutoFields() {
     });
   });
 
+  const frontNeckInput = document.getElementById("aldrichFrontNeckDart");
+  if (frontNeckInput) {
+    frontNeckInput.addEventListener("input", () => {
+      aldrichAutoState.frontNeckDartEdited = true;
+    });
+  }
+
   [
-    ["aldrichFrontNeckDart", "frontNeckDartEdited"],
     ["aldrichFrontWaistDart", "frontWaistDartEdited"],
     ["aldrichBackWaistDart", "backWaistDartEdited"],
-    ["aldrichSideWaistDart", "sideWaistDartEdited"],
+    ["aldrichFrontSideWaistDart", "frontSideWaistDartEdited"],
+    ["aldrichBackSideWaistDart", "backSideWaistDartEdited"],
   ].forEach(([id, flag]) => {
     const input = document.getElementById(id);
     if (!input) return;
     input.addEventListener("input", () => {
       aldrichAutoState[flag] = true;
+      aldrichAutoState.bustWaistDiffEdited = false;
     });
   });
 
@@ -1646,7 +1713,11 @@ function initAldrichAutoFields() {
     bustWaistInput.addEventListener("change", () => {
       const diffVal = parseFloat(bustWaistInput.value);
       if (Number.isFinite(diffVal)) {
-        applyAldrichDartDistribution(diffVal, { force: true, resetManual: true, skipDiffField: true });
+        applyAldrichDartDistribution(diffVal, {
+          force: true,
+          resetDartFlags: true,
+          skipDiffField: true,
+        });
         aldrichAutoState.bustWaistDiffEdited = true;
         scheduleRegen();
       }
@@ -1719,7 +1790,8 @@ const aldrichAutoState = {
   frontNeckDartEdited: false,
   frontWaistDartEdited: false,
   backWaistDartEdited: false,
-  sideWaistDartEdited: false,
+  frontSideWaistDartEdited: false,
+  backSideWaistDartEdited: false,
   bustWaistDiffEdited: false,
 };
 const PATTERN_CONFIGS = {
@@ -2246,22 +2318,39 @@ function computeAldrichWaistDiff(bust, waist, bustEase, waistEase) {
   return bustHalf - waistHalf;
 }
 
-function computeAldrichWaistDartsFromDiff(diff) {
+function computeAldrichWaistDartsFromDiff(diff, options = {}) {
   if (!Number.isFinite(diff)) {
-    return { front: 0, back: 0, side: 0 };
+    return { front: 0, back: 0, frontSide: 0, backSide: 0 };
   }
-  const targetDiff = Math.abs(diff);
-  const x = (targetDiff - 6) / 4;
+  const reduced = options.reduced === true;
+  let waistDifference = Math.abs(diff);
+  if (reduced) {
+    waistDifference *= 0.75;
+  }
+  const subtractBase = reduced ? 5 : 6;
+  let x = (waistDifference - subtractBase) / 4;
+  if (!Number.isFinite(x) || x < 0) {
+    x = 0;
+  }
+  if (reduced) {
+    return {
+      backSide: x,
+      frontSide: x + 1,
+      back: x + 1.5,
+      front: x + 2.5,
+    };
+  }
   return {
-    front: x + 3,
+    backSide: x,
+    frontSide: x + 1,
     back: x + 2,
-    side: 2 * x + 1,
+    front: x + 3,
   };
 }
 
-function computeAldrichWaistDarts(bust, waist, bustEase, waistEase) {
+function computeAldrichWaistDarts(bust, waist, bustEase, waistEase, options = {}) {
   const diff = computeAldrichWaistDiff(bust, waist, bustEase, waistEase);
-  return computeAldrichWaistDartsFromDiff(diff);
+  return computeAldrichWaistDartsFromDiff(diff, options);
 }
 
 function computeAldrichPointADistance(bust) {
