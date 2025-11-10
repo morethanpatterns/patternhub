@@ -245,23 +245,31 @@ body {
 .hofenbitzer-measure-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 8px 0 12px;
+  gap: 6px;
+  margin: 4px 0 10px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .measure-block {
-  padding: 6px 0;
+  padding: 4px 0;
   border-bottom: none;
-  overflow: visible;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .measure-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 1fr));
-  column-gap: 20px;
-  row-gap: 12px;
-  width: 100%;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  column-gap: 16px;
+  row-gap: 6px;
+  margin-bottom: 6px;
   min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .form-field {
@@ -271,6 +279,7 @@ body {
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+  margin-bottom: 0;
 }
 
 .form-label {
@@ -283,15 +292,16 @@ body {
 }
 
 .form-input {
-  font-size: 15px;
+  font-size: 14px;
   height: 32px;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 1px solid #d0d7e2;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
   outline: none;
   box-shadow: none;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -310,6 +320,13 @@ body {
   font-weight: 700;
 }
 
+.measure-row input,
+.measure-row .form-input {
+  border-radius: 6px;
+  height: 32px;
+  font-size: 14px;
+}
+
 
 .form-grid {
   display: grid;
@@ -324,23 +341,17 @@ body {
   gap: 4px;
 }
 
-input[type="number"] {
-  font-size: 1rem;
-  padding: 6px 8px;
-  border: 1px solid #cbd5f5;
-  border-radius: 4px;
-  background: #fff;
-}
-
+input,
 select {
-  font-size: 1rem;
+  width: 100%;
+  max-width: 100%;
+  height: 32px;
   padding: 6px 8px;
+  font-size: 14px;
   border: 1px solid #cbd5f5;
-  border-radius: 4px;
+  border-radius: 6px;
   background: #fff;
-}
-
-input {
+  box-sizing: border-box;
   min-width: 0;
 }
 
@@ -535,26 +546,11 @@ svg {
 
 @media (max-width: 900px) {
   .measure-row {
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
-    column-gap: 16px;
-    row-gap: 12px;
-  }
-
-  .form-input {
-    height: 30px;
-    font-size: 13px;
-    padding: 4px 8px;
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  .measure-row {
-    grid-template-columns: 1fr;
-    column-gap: 0;
-  }
-}
-
-@media (max-width: 480px) {
   .measure-row {
     grid-template-columns: 1fr;
   }
