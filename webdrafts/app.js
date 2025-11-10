@@ -203,22 +203,29 @@ function formatHofenbitzerValue(value) {
 }
 
 function createHofenbitzerField(labelText, content, options = {}) {
-  const wrapper = document.createElement("label");
-  wrapper.className = `hof-field${options.final ? " hof-field--final" : ""}`;
+  const wrapper = document.createElement("div");
+  wrapper.className = `form-field${options.final ? " form-field--final" : ""}`;
   if (labelText != null) {
-    const label = document.createElement("span");
+    const label = document.createElement("label");
+    label.className = "form-label";
     label.textContent = labelText;
     wrapper.appendChild(label);
+  }
+  content.classList.add("form-input");
+  if (options.final) {
+    content.classList.add("final");
   }
   wrapper.appendChild(content);
   return wrapper;
 }
 
 function createHofenbitzerFinalField(labelText, valueText) {
-  const output = document.createElement("output");
-  output.textContent = valueText;
-  const field = createHofenbitzerField(labelText, output, { final: true });
-  return { field, output };
+  const input = document.createElement("input");
+  input.type = "number";
+  input.readOnly = true;
+  input.value = valueText;
+  const field = createHofenbitzerField(labelText, input, { final: true });
+  return { field, output: input };
 }
 
 function updateHofenbitzerMeasurementRow(rowId) {
@@ -233,7 +240,7 @@ function updateHofenbitzerMeasurementRow(rowId) {
     resolvedEase = Number.isFinite(easeValue) ? easeValue : def.easeDefault || 0;
   }
   if (finalOutput) {
-    finalOutput.textContent = formatHofenbitzerValue(resolvedMeasurement + resolvedEase);
+    finalOutput.value = formatHofenbitzerValue(resolvedMeasurement + resolvedEase);
   }
 }
 
@@ -244,7 +251,7 @@ function updateHofenbitzerSecondaryRow(rowId) {
   const value = Number.parseFloat(input.value);
   const resolved = Number.isFinite(value) ? value : def.defaultValue;
   if (finalOutput) {
-    finalOutput.textContent = formatHofenbitzerValue(resolved);
+    finalOutput.value = formatHofenbitzerValue(resolved);
   }
 }
 
@@ -287,22 +294,18 @@ function initHofenbitzerControls() {
   primaryHost.innerHTML = "";
 
   HOFENBITZER_PRIMARY_MEASUREMENTS.forEach((def) => {
-    const rowEl = document.createElement("div");
-    rowEl.className = "hof-row";
-    const label = document.createElement("div");
-    label.className = "hof-row__label";
-    label.textContent = `${def.label}:`;
-    rowEl.appendChild(label);
-
+    const rowEl = document.createElement("section");
+    rowEl.className = "measure-block";
     const inputsWrapper = document.createElement("div");
-    inputsWrapper.className = "hof-row__inputs";
+    inputsWrapper.className = "measure-row";
+    rowEl.appendChild(inputsWrapper);
 
     const measurementInput = document.createElement("input");
     measurementInput.type = "number";
     measurementInput.step = def.step || 0.1;
     measurementInput.value = formatHofenbitzerValue(def.measurementDefault);
     measurementInput.inputMode = "decimal";
-    inputsWrapper.appendChild(createHofenbitzerField(null, measurementInput));
+    inputsWrapper.appendChild(createHofenbitzerField(def.label, measurementInput));
 
     let easeInput = null;
     if (def.hasEase !== false) {
@@ -313,17 +316,18 @@ function initHofenbitzerControls() {
       easeInput.inputMode = "decimal";
       inputsWrapper.appendChild(createHofenbitzerField("Ease", easeInput));
     } else {
-      const placeholder = document.createElement("div");
-      placeholder.className = "hof-field hof-field--empty";
-      placeholder.innerHTML = "<span>Ease</span><output>--</output>";
-      inputsWrapper.appendChild(placeholder);
+      const emptyInput = document.createElement("input");
+      emptyInput.type = "text";
+      emptyInput.readOnly = true;
+      emptyInput.value = "--";
+      emptyInput.tabIndex = -1;
+      inputsWrapper.appendChild(createHofenbitzerField("Ease", emptyInput, { empty: true }));
     }
 
     const initialFinal = def.measurementDefault + (def.hasEase !== false ? def.easeDefault || 0 : 0);
     const finalField = createHofenbitzerFinalField("Final", formatHofenbitzerValue(initialFinal));
     inputsWrapper.appendChild(finalField.field);
 
-    rowEl.appendChild(inputsWrapper);
     primaryHost.appendChild(rowEl);
 
     hofenbitzerUi.measurementRows[def.id] = {
@@ -345,27 +349,22 @@ function initHofenbitzerControls() {
   secondaryHost.innerHTML = "";
 
   HOFENBITZER_SECONDARY_MEASUREMENTS.forEach((def) => {
-    const rowEl = document.createElement("div");
-    rowEl.className = "hof-row hof-row--secondary";
-    const label = document.createElement("div");
-    label.className = "hof-row__label";
-    label.textContent = `${def.label}:`;
-    rowEl.appendChild(label);
-
+    const rowEl = document.createElement("section");
+    rowEl.className = "measure-block measure-block--secondary";
     const inputsWrapper = document.createElement("div");
-    inputsWrapper.className = "hof-row__inputs";
+    inputsWrapper.className = "measure-row";
+    rowEl.appendChild(inputsWrapper);
 
     const input = document.createElement("input");
     input.type = "number";
     input.step = def.step || 0.1;
     input.value = formatHofenbitzerValue(def.defaultValue);
     input.inputMode = "decimal";
-    inputsWrapper.appendChild(createHofenbitzerField(null, input));
+    inputsWrapper.appendChild(createHofenbitzerField(def.label, input));
 
     const finalField = createHofenbitzerFinalField("Final", formatHofenbitzerValue(def.defaultValue));
     inputsWrapper.appendChild(finalField.field);
 
-    rowEl.appendChild(inputsWrapper);
     secondaryHost.appendChild(rowEl);
 
     hofenbitzerUi.secondaryRows[def.id] = {
