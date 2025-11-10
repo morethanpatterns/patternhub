@@ -13,9 +13,9 @@
           <select id="patternSelect">
             <option value="armstrong" selected>Armstrong's Bodice</option>
             <option value="aldrich">Aldrich's Close Fitting Bodice</option>
+            <option value="hofenbitzerCasual">Hofenbitzer's Casual Bodice</option>
             <optgroup label="Almost Ready">
               <option value="hofenbitzer-trouser" disabled>Hofenbitzer's Standard Trouser (Coming Soon)</option>
-              <option value="hofenbitzer-casual-bodice" disabled>Hofenbitzer's Casual Bodice (Coming Soon)</option>
               <option value="hofenbitzer-contoured-bodice" disabled>Hofenbitzer's Contoured Bodice (Coming Soon)</option>
               <option value="hofenbitzer-basic-skirt" disabled>Hofenbitzer's Basic Skirt (Coming Soon)</option>
             </optgroup>
@@ -212,6 +212,52 @@
         <div class="toggles">
           <label><input id="aldrichShowGuides" type="checkbox" checked>Show Construction Lines</label>
           <label><input id="aldrichShowMarkers" type="checkbox" checked>Show Markers and Numbers</label>
+        </div>
+      </div>
+
+      <div id="hofenbitzerControls" class="pattern-section" hidden>
+        <h1>Hofenbitzer's Casual Bodice</h1>
+        <p class="hint">All measurements are in centimeters. Use the fit profile to auto-fill suggested ease values, then fine-tune any inputs.</p>
+
+        <div class="hof-layout">
+          <div class="hof-column">
+            <div class="hof-card">
+              <div class="hof-fit-control">
+                <label class="hof-fit-control__label" for="hofenbitzerFitProfile">Fit Profile</label>
+                <div class="hof-fit-control__select">
+                  <select id="hofenbitzerFitProfile">
+                    <option value="0">Fit 0</option>
+                    <option value="1">Fit 1</option>
+                    <option value="2">Fit 2</option>
+                    <option value="3" selected>Fit 3</option>
+                    <option value="4">Fit 4</option>
+                    <option value="5">Fit 5</option>
+                    <option value="6">Fit 6</option>
+                  </select>
+                </div>
+              </div>
+              <h2>Body Measurements &amp; Ease</h2>
+              <div id="hofenbitzerPrimaryMeasurements" class="hofenbitzer-measure-grid"></div>
+            </div>
+          </div>
+
+          <div class="hof-column">
+            <div class="hof-card">
+              <h2>Key Lengths</h2>
+              <div id="hofenbitzerSecondaryMeasurements" class="hofenbitzer-measure-grid secondary"></div>
+            </div>
+            <div class="hof-card hof-actions">
+              <div class="actions">
+                <button id="downloadHofenbitzer" type="button">Download SVG</button>
+                <button id="shareHofenbitzer" type="button" class="link-button">Share Link</button>
+                <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
+              </div>
+              <div class="toggles">
+                <label><input id="hofenbitzerShowGuides" type="checkbox" checked>Show Construction Lines</label>
+                <label><input id="hofenbitzerShowMarkers" type="checkbox" checked>Show Markers and Numbers</label>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
