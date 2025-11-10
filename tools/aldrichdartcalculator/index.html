@@ -249,6 +249,74 @@
         text-decoration: underline;
       }
 
+      .share-modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background: rgba(15, 23, 42, 0.5);
+        z-index: 1000;
+      }
+
+      .share-modal[hidden] {
+        display: none;
+      }
+
+      .share-modal__panel {
+        width: min(420px, 100%);
+        background: #fff;
+        color: #111;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 25px 45px -30px rgba(15, 23, 42, 0.7);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .share-modal__panel h3 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      .share-modal__hint {
+        margin: 0;
+        font-size: 0.95rem;
+        color: rgba(0, 0, 0, 0.7);
+      }
+
+      .share-modal__actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+      }
+
+      .share-modal__actions button {
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 8px;
+        padding: 0.65rem 1rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        background: rgba(13, 110, 253, 0.08);
+        color: #0d3f86;
+      }
+
+      .share-modal__actions button:hover {
+        background: rgba(13, 110, 253, 0.15);
+      }
+
+      .share-modal__close {
+        align-self: flex-end;
+        background: transparent;
+        border: none;
+        color: rgba(0, 0, 0, 0.65);
+        font-weight: 600;
+        cursor: pointer;
+      }
+
       @media (max-width: 520px) {
         body {
           padding: 1.2rem;
@@ -399,6 +467,27 @@
         </div>
       </div>
     </div>
+    <div class="share-modal" id="share-modal" hidden aria-hidden="true">
+      <div
+        class="share-modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
+      >
+        <h3 id="share-modal-title">Share this calculator</h3>
+        <p class="share-modal__hint">
+          Choose how you want to share the Aldrich dart calculator link.
+        </p>
+        <div class="share-modal__actions">
+          <button type="button" id="share-copy" data-initial-focus>Copy Link</button>
+          <button type="button" id="share-open">Open in New Tab</button>
+          <button type="button" id="share-email">Share via Email</button>
+        </div>
+        <button class="share-modal__close" type="button" id="share-close">
+          Close
+        </button>
+      </div>
+    </div>
 
     <script>
       const loadHtml2Canvas = (() => {
@@ -427,11 +516,17 @@
       const shareBtn = document.getElementById("share-url");
       const screenshotFeedback = document.getElementById("screenshot-feedback");
       const shareFeedback = document.getElementById("share-feedback");
+      const shareDialog = document.getElementById("share-modal");
+      const shareCopyBtn = document.getElementById("share-copy");
+      const shareOpenBtn = document.getElementById("share-open");
+      const shareEmailBtn = document.getElementById("share-email");
+      const shareCloseBtn = document.getElementById("share-close");
       let shareFeedbackTimeout;
       let screenshotFeedbackTimeout;
+      let previouslyFocusedElement = null;
       const SCREENSHOT_WIDTH = 640;
       const SCREENSHOT_SCALE = 3;
-      const DEFAULT_SHARE_URL = "https://morethanpatterns.github.io/PatternKit/panel/aldrichdartcalculator/";
+      const DEFAULT_SHARE_URL = "https://morethanpatterns.github.io/patternhub/tools/aldrichdartcalculator/index.html";
       const SHARE_TARGET_URL =
         window.CALCULATOR_SHARE_URL ||
         document.documentElement.getAttribute("data-share-url") ||
@@ -657,6 +752,38 @@
         }, 2200);
       }
 
+      function openShareDialog() {
+        if (!shareDialog) return;
+        previouslyFocusedElement = document.activeElement;
+        shareDialog.hidden = false;
+        shareDialog.setAttribute("aria-hidden", "false");
+        requestAnimationFrame(() => {
+          const initial =
+            shareDialog.querySelector("[data-initial-focus]") ||
+            shareDialog.querySelector("button");
+          initial?.focus();
+        });
+        document.addEventListener("keydown", handleShareKeydown);
+      }
+
+      function closeShareDialog() {
+        if (!shareDialog) return;
+        shareDialog.hidden = true;
+        shareDialog.setAttribute("aria-hidden", "true");
+        document.removeEventListener("keydown", handleShareKeydown);
+        if (previouslyFocusedElement) {
+          previouslyFocusedElement.focus({ preventScroll: true });
+          previouslyFocusedElement = null;
+        }
+      }
+
+      function handleShareKeydown(event) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeShareDialog();
+        }
+      }
+
       async function copyToClipboardFallback(url) {
         try {
           const textarea = document.createElement("textarea");
@@ -685,8 +812,8 @@
 
       async function handleShareClick() {
         const url = SHARE_TARGET_URL;
-        try {
-          if (navigator.share) {
+        if (navigator.share) {
+          try {
             await navigator.share({
               title: document.title || "Aldrich Dart Calculator",
               text: "Check out this Aldrich dart calculator.",
@@ -694,33 +821,84 @@
             });
             showShareFeedback("Share dialog opened.");
             return;
+          } catch (err) {
+            console.warn("Web Share API failed:", err);
           }
-        } catch (err) {
-          console.warn("Web Share API failed:", err);
         }
 
+        openShareDialog();
+      }
+
+      async function handleShareCopy() {
+        const url = SHARE_TARGET_URL;
         try {
           if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(url);
             showShareFeedback("Link copied!");
+            closeShareDialog();
             return;
           }
         } catch (err) {
           console.warn("Clipboard API failed:", err);
         }
-
         const fallbackSuccess = await copyToClipboardFallback(url);
         if (fallbackSuccess) {
           showShareFeedback("Link copied!");
+          closeShareDialog();
           return;
         }
-
         window.prompt("Copy this link:", url);
         showShareFeedback("Copy the link manually.", "error");
       }
 
+      function handleShareOpen() {
+        const url = SHARE_TARGET_URL;
+        const popup = window.open(url, "_blank", "noopener");
+        if (!popup) {
+          showShareFeedback("Popup blocked. Copy the link instead.", "error");
+          return;
+        }
+        showShareFeedback("Opened a new tab.");
+        closeShareDialog();
+      }
+
+      function handleShareEmail() {
+        const url = SHARE_TARGET_URL;
+        const subject = encodeURIComponent("Aldrich Dart Calculator");
+        const body = encodeURIComponent(
+          `Check out this Aldrich dart calculator:\n${url}`
+        );
+        const mailtoTarget = `mailto:?subject=${subject}&body=${body}`;
+        const emailWindow = window.open(mailtoTarget, "_blank");
+        if (!emailWindow) {
+          showShareFeedback("Unable to open email client.", "error");
+          return;
+        }
+        showShareFeedback("Email draft opened.");
+        closeShareDialog();
+      }
+
       if (shareBtn) {
         shareBtn.addEventListener("click", handleShareClick);
+      }
+      if (shareDialog) {
+        shareDialog.addEventListener("click", (event) => {
+          if (event.target === shareDialog) {
+            closeShareDialog();
+          }
+        });
+      }
+      if (shareCloseBtn) {
+        shareCloseBtn.addEventListener("click", closeShareDialog);
+      }
+      if (shareCopyBtn) {
+        shareCopyBtn.addEventListener("click", handleShareCopy);
+      }
+      if (shareOpenBtn) {
+        shareOpenBtn.addEventListener("click", handleShareOpen);
+      }
+      if (shareEmailBtn) {
+        shareEmailBtn.addEventListener("click", handleShareEmail);
       }
 
       update();
