@@ -2106,7 +2106,9 @@ function generateHofenbitzerCasualBodice(params) {
       x: endPt.x - dx / 3 + nx * bulge,
       y: endPt.y - dy / 3 + ny * bulge,
     };
-    if (Number.isFinite(opts.handleLengthCm)) {
+    if (opts.startHandleOverride) {
+      ctrl1 = { ...opts.startHandleOverride };
+    } else if (Number.isFinite(opts.handleLengthCm)) {
       const dir = opts.handleDirection ?? 1;
       if (opts.handleSide === "start") {
         ctrl1 = {
@@ -2119,6 +2121,9 @@ function generateHofenbitzerCasualBodice(params) {
           y: endPt.y,
         };
       }
+    }
+    if (opts.endHandleOverride) {
+      ctrl2 = { ...opts.endHandleOverride };
     }
     if (Number.isFinite(opts.startHandleShiftCm)) {
       ctrl1 = {
@@ -2289,10 +2294,8 @@ function generateHofenbitzerCasualBodice(params) {
         layer: backLayer,
         name: "Back Neck Curve",
         bulgeCm: backBulge,
-        handleSide: "end",
-        handleDirection: -1,
-        handleLengthCm: handleLength,
-        startHandleShiftCm: 0.4,
+        startHandleOverride: { x: point1a.x + 0.3, y: point1a.y + handleLength },
+        endHandleOverride: { x: point2.x - handleLength, y: point2.y },
       });
     }
 
@@ -2597,6 +2600,13 @@ function generateHofenbitzerCasualBodice(params) {
         handleLengthCm: handleLength,
         startHandleShiftCm: 0.4,
       });
+      if (point20) {
+        drawSegment(guideLayer, point20, point23, {
+          dashed: true,
+          name: "20-23 Guide",
+          color: HOFENBITZER_GUIDE_COLOR,
+        });
+      }
     }
 
     const point24 = point20a
