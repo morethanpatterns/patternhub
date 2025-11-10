@@ -220,44 +220,38 @@
         <p class="hint">All measurements are in centimetres. Defaults reference the size 12 block from <a href="https://archive.org/details/patternmakingfor0000jose_f0p5" target="_blank" rel="noopener">Aldrich's book</a> – please have it handy when entering your own measurements. Details on the formulas of the darts can be found on the <a href="https://discord.gg/CFvfXfZUTa" target="_blank" rel="noopener">Discord server</a>.</p>
         <p class="note">Need help or want to request a draft? Join the <a href="https://discord.gg/CFvfXfZUTa" target="_blank" rel="noopener">Discord community</a>.</p>
 
-        <div class="hof-layout">
-          <div class="hof-column">
-            <div class="hof-card">
-              <div class="hof-fit-control">
-                <label class="hof-fit-control__label" for="hofenbitzerFitProfile">Fit Profile</label>
-                <div class="hof-fit-control__select">
-                  <select id="hofenbitzerFitProfile">
-                    <option value="0">Fit 0</option>
-                    <option value="1">Fit 1</option>
-                    <option value="2">Fit 2</option>
-                    <option value="3" selected>Fit 3</option>
-                    <option value="4">Fit 4</option>
-                    <option value="5">Fit 5</option>
-                    <option value="6">Fit 6</option>
-                  </select>
-                </div>
-              </div>
-              <h2>Body Measurements &amp; Ease</h2>
-              <div id="hofenbitzerPrimaryMeasurements" class="hofenbitzer-measure-grid"></div>
+        <div class="hof-card">
+          <div class="hof-fit-control">
+            <label class="hof-fit-control__label" for="hofenbitzerFitProfile">Fit Profile</label>
+            <div class="hof-fit-control__select">
+              <select id="hofenbitzerFitProfile">
+                <option value="0">Fit 0</option>
+                <option value="1">Fit 1</option>
+                <option value="2">Fit 2</option>
+                <option value="3" selected>Fit 3</option>
+                <option value="4">Fit 4</option>
+                <option value="5">Fit 5</option>
+                <option value="6">Fit 6</option>
+              </select>
             </div>
           </div>
+          <h2>Body Measurements &amp; Ease</h2>
+          <div id="hofenbitzerPrimaryMeasurements" class="hofenbitzer-measure-grid"></div>
+          <div class="key-lengths-title">Key Lengths</div>
+          <div id="hofenbitzerSecondaryMeasurements" class="key-lengths"></div>
 
-          <div class="hof-column">
-            <div class="hof-card">
-              <h2>Key Lengths</h2>
-              <div id="hofenbitzerSecondaryMeasurements" class="hofenbitzer-measure-grid secondary"></div>
-            </div>
-            <div class="hof-card hof-actions">
-              <div class="actions">
-                <button id="downloadHofenbitzer" type="button">Download SVG</button>
-                <button id="shareHofenbitzer" type="button" class="link-button">Share Link</button>
-                <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
-              </div>
-              <div class="toggles">
-                <label><input id="hofenbitzerShowGuides" type="checkbox" checked>Show Construction Lines</label>
-                <label><input id="hofenbitzerShowMarkers" type="checkbox" checked>Show Markers and Numbers</label>
-              </div>
-            </div>
+          <div class="toggles inline">
+            <label><input id="hofenbitzerShowGuides" type="checkbox" checked>Show Construction Lines</label>
+            <label><input id="hofenbitzerShowMarkers" type="checkbox" checked>Show Markers and Numbers</label>
+          </div>
+
+          <div class="actions">
+            <button id="downloadHofenbitzer" type="button">Download SVG</button>
+          </div>
+
+          <div class="actions secondary">
+            <button id="shareHofenbitzer" type="button" class="link-button">Share Link</button>
+            <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
           </div>
         </div>
       </div>

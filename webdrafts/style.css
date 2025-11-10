@@ -245,11 +245,11 @@ body {
 .hofenbitzer-measure-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .measure-block {
-  padding: 16px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--ui-border, #e6edf3);
   overflow: visible;
 }
@@ -262,19 +262,15 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(120px, 1fr));
   column-gap: 16px;
-  row-gap: 14px;
+  row-gap: 10px;
   width: 100%;
   min-width: 0;
-}
-
-.measure-block--secondary .measure-row {
-  grid-template-columns: repeat(2, minmax(120px, 1fr));
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
@@ -291,7 +287,7 @@ body {
 
 .form-input {
   font-size: 15px;
-  height: 34px;
+  height: 32px;
   padding: 6px 10px;
   border: 1px solid #d0d7e2;
   border-radius: 8px;
@@ -315,6 +311,58 @@ body {
 
 .form-input.final {
   font-weight: 700;
+}
+
+.key-lengths-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 12px 0 6px;
+}
+
+.key-lengths {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 8px 14px;
+  align-items: center;
+  margin: 4px 0;
+  width: 100%;
+}
+
+.key-chip {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  column-gap: 8px;
+  min-width: 0;
+}
+
+.key-chip__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2f3440;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.key-chip input {
+  height: 30px;
+  padding: 4px 8px;
+  font-size: 14px;
+  border: 1px solid #d0d7e2;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.key-chip input:focus {
+  border-color: #8bb4ff;
+  box-shadow: 0 0 0 3px rgba(139, 180, 255, 0.25);
 }
 
 .form-grid {
@@ -546,10 +594,6 @@ svg {
     row-gap: 12px;
   }
 
-  .measure-block--secondary .measure-row {
-    grid-template-columns: repeat(2, minmax(110px, 1fr));
-  }
-
   .form-input {
     height: 30px;
     font-size: 13px;
@@ -558,15 +602,25 @@ svg {
 }
 
 @media (max-width: 640px) {
-  .measure-row,
-  .measure-block--secondary .measure-row {
+  .measure-row {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 480px) {
-  .measure-row,
-  .measure-block--secondary .measure-row {
+  .measure-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .key-lengths {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .key-lengths {
     grid-template-columns: 1fr;
   }
 }

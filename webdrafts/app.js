@@ -247,12 +247,7 @@ function updateHofenbitzerMeasurementRow(rowId) {
 function updateHofenbitzerSecondaryRow(rowId) {
   const ref = hofenbitzerUi.secondaryRows[rowId];
   if (!ref) return;
-  const { def, input, finalOutput } = ref;
-  const value = Number.parseFloat(input.value);
-  const resolved = Number.isFinite(value) ? value : def.defaultValue;
-  if (finalOutput) {
-    finalOutput.value = formatHofenbitzerValue(resolved);
-  }
+  // Secondary values read directly during regeneration.
 }
 
 function updateHofenbitzerDerivedOutputs(values = {}) {
@@ -349,28 +344,30 @@ function initHofenbitzerControls() {
   secondaryHost.innerHTML = "";
 
   HOFENBITZER_SECONDARY_MEASUREMENTS.forEach((def) => {
-    const rowEl = document.createElement("section");
-    rowEl.className = "measure-block measure-block--secondary";
-    const inputsWrapper = document.createElement("div");
-    inputsWrapper.className = "measure-row";
-    rowEl.appendChild(inputsWrapper);
+    const chip = document.createElement("div");
+    chip.className = "key-chip";
+
+    const label = document.createElement("label");
+    label.className = "key-chip__label";
+    const inputId = `hofKey-${def.id}`;
+    label.setAttribute("for", inputId);
+    label.textContent = def.label;
+    chip.appendChild(label);
 
     const input = document.createElement("input");
     input.type = "number";
+    input.id = inputId;
     input.step = def.step || 0.1;
     input.value = formatHofenbitzerValue(def.defaultValue);
     input.inputMode = "decimal";
-    inputsWrapper.appendChild(createHofenbitzerField(def.label, input));
+    input.classList.add("form-input");
+    chip.appendChild(input);
 
-    const finalField = createHofenbitzerFinalField("Final", formatHofenbitzerValue(def.defaultValue));
-    inputsWrapper.appendChild(finalField.field);
-
-    secondaryHost.appendChild(rowEl);
+    secondaryHost.appendChild(chip);
 
     hofenbitzerUi.secondaryRows[def.id] = {
       def,
       input,
-      finalOutput: finalField.output,
     };
 
     input.addEventListener("input", () => {
