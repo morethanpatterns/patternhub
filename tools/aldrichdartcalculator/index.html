@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Aldrich Dart Calculator</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        line-height: 1.5;
+      }
+
+      body {
+        margin: 0;
+        padding: 2rem;
+        background: #f7f7f7;
+        color: #222;
+      }
+
+      h1 {
+        margin-top: 0;
+        font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+      }
+
+      .subheading {
+        margin: 0 0 1.3rem 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: rgba(13, 110, 253, 0.82);
+        letter-spacing: 0.06em;
+      }
+
+      .panel {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 18px 35px -25px rgba(0, 0, 0, 0.45);
+      }
+
+      .form-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        margin-bottom: 1.75rem;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        font-weight: 600;
+        gap: 0.35rem;
+      }
+
+      input {
+        padding: 0.65rem 0.8rem;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        font-size: 1rem;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.18);
+      }
+
+      .options {
+        margin: 0 0 1.5rem 0;
+      }
+
+      .toggle {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.55rem;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        color: rgba(0, 0, 0, 0.7);
+      }
+
+      .toggle input[type='checkbox'] {
+        appearance: none;
+        width: 1.05rem;
+        height: 1.05rem;
+        border-radius: 0.28rem;
+        border: 1px solid rgba(0, 0, 0, 0.35);
+        background: linear-gradient(135deg, #ffffff, #f6f8ff);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+        display: grid;
+        place-items: center;
+        margin: 0;
+        transition: border-color 0.2s ease, background 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+
+      .toggle input[type='checkbox']::after {
+        content: '';
+        width: 0.6rem;
+        height: 0.6rem;
+        border-radius: 0.18rem;
+        background: rgba(13, 110, 253, 0.18);
+        transform: scale(0);
+        transition: transform 0.18s ease, background 0.18s ease;
+      }
+
+      .toggle input[type='checkbox']:checked {
+        border-color: rgba(13, 110, 253, 0.55);
+        background: linear-gradient(135deg, #eff6ff, #dbe9ff);
+        box-shadow: inset 0 1px 2px rgba(13, 110, 253, 0.18);
+      }
+
+      .toggle input[type='checkbox']:checked::after {
+        transform: scale(1);
+        background: rgba(13, 110, 253, 0.6);
+      }
+
+      .toggle input[type='checkbox']:focus-visible {
+        outline: 2px solid rgba(13, 110, 253, 0.4);
+        outline-offset: 2px;
+      }
+
+      .screenshot-wrapper {
+        position: fixed;
+        left: -99999px;
+        top: 0;
+        background: #ffffff;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .results {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .result-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        background: rgba(13, 110, 253, 0.08);
+        font-weight: 600;
+      }
+
+      .result-item span:last-child {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .footnote {
+        margin-top: 1.75rem;
+        font-size: 0.9rem;
+        color: rgba(0, 0, 0, 0.55);
+      }
+
+      .button-row {
+        margin-top: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .btn {
+        padding: 0.65rem 1.1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #fff;
+        background: rgba(108, 117, 125, 0.85);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease,
+          border-color 0.15s ease, background 0.15s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(0, 0, 0, 0.2);
+        background: rgba(108, 117, 125, 0.92);
+        box-shadow: 0 12px 20px -20px rgba(0, 0, 0, 0.6);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+        background: rgba(98, 108, 117, 0.92);
+        box-shadow: none;
+      }
+
+      .btn:focus-visible {
+        outline: 2px solid rgba(108, 117, 125, 0.6);
+        outline-offset: 2px;
+      }
+
+      .btnShare {
+        background: rgba(80, 120, 180, 0.82);
+      }
+
+      .btnShare:hover {
+        background: rgba(80, 120, 180, 0.9);
+      }
+
+      .btnShare:active {
+        background: rgba(2, 4, 6, 0.92);
+      }
+
+      .feedback {
+        display: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: rgba(25, 135, 84, 0.9);
+        flex-basis: 100%;
+        margin-top: 0.25rem;
+      }
+
+      .feedback[data-state] {
+        display: block;
+      }
+
+      .feedback[data-state='error'] {
+        color: rgba(220, 53, 69, 0.9);
+      }
+
+      .panel-footer {
+        margin-top: 0.6rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        padding-top: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        font-size: 0.95rem;
+        color: rgba(0, 0, 0, 0.72);
+      }
+
+      .panel-footer a {
+        color: rgba(13, 110, 253, 0.9);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .panel-footer a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 520px) {
+        body {
+          padding: 1.2rem;
+        }
+
+        .panel {
+          padding: 1.25rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h1>Aldrich Dart Calculator</h1>
+      <h2 class="subheading">Womenswear: Close Fitting Bodice Block</h2>
+      <p>
+        Enter bust and waist measurements (in centimetres) to generate the neck
+        and waist dart breakdowns following Aldrich&rsquo;s close-fitting bodice
+        method.
+      </p>
+
+      <div class="form-grid">
+        <label>
+          Bust (cm)
+          <input
+            id="bust"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.1"
+            value="88"
+          />
+        </label>
+        <label>
+          Bust Ease (cm)
+          <input
+            id="bust-ease"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.1"
+            value="5"
+          />
+        </label>
+        <label>
+          Waist (cm)
+          <input
+            id="waist"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.1"
+            value="68"
+          />
+        </label>
+        <label>
+          Waist Ease (cm)
+          <input
+            id="waist-ease"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.1"
+            value="3"
+          />
+        </label>
+      </div>
+
+      <div class="options">
+        <label class="toggle">
+          <input type="checkbox" id="reduced-dart" />
+          <span>Reduced Darting</span>
+        </label>
+      </div>
+
+      <div class="results" id="results">
+        <div class="result-item">
+          <span>Neck Dart</span>
+          <span id="neck-dart">–</span>
+        </div>
+        <div class="result-item">
+          <span>Waist Difference</span>
+          <span id="waist-diff">–</span>
+        </div>
+        <div class="result-item">
+          <span>Front Waist Dart</span>
+          <span id="front-waist">–</span>
+        </div>
+        <div class="result-item">
+          <span>Back Waist Dart</span>
+          <span id="back-waist">–</span>
+        </div>
+        <div class="result-item">
+          <span>Front Side Waist Dart</span>
+          <span id="front-side-waist">–</span>
+        </div>
+        <div class="result-item">
+          <span>Back Side Waist Dart</span>
+          <span id="back-side-waist">–</span>
+        </div>
+      </div>
+
+      <p class="footnote">
+        Dart values are expressed in centimetres. Adjust bust and waist ease to
+        suit your block. The Waist Difference is the difference between your bust and waist.
+      </p>
+      <div class="button-row">
+        <button class="btn" id="export-screenshot" type="button">
+          Copy Screenshot
+        </button>
+        <button class="btn btnShare" id="share-url" type="button">
+          Share
+        </button>
+        <span
+          class="feedback"
+          id="screenshot-feedback"
+          role="status"
+          aria-live="polite"
+        ></span>
+        <span
+          class="feedback"
+          id="share-feedback"
+          role="status"
+          aria-live="polite"
+        ></span>
+      </div>
+      <div class="panel-footer">
+        <div>
+          <span aria-hidden="true">✂️</span>
+          Made by <strong>More Than Patterns</strong>
+        </div>
+        <div>
+          <span aria-hidden="true">💬</span>
+          Join the
+          <a href="https://discord.gg/CFvfXfZUTa" target="_blank" rel="noopener"
+            >Discord community</a
+          >
+        </div>
+        <div>
+          <span aria-hidden="true">🐙</span>
+          Explore the project on
+          <a
+            href="https://github.com/morethanpatterns/PatternKit"
+            target="_blank"
+            rel="noopener"
+            >GitHub</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const loadHtml2Canvas = (() => {
+        let promise = null;
+        return () => {
+          if (promise) return promise;
+          promise = new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src =
+              "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+            script.onload = () => resolve(window.html2canvas);
+            script.onerror = () =>
+              reject(new Error("Failed to load html2canvas library."));
+            document.head.appendChild(script);
+          });
+          return promise;
+        };
+      })();
+
+      const bustInput = document.getElementById("bust");
+      const waistInput = document.getElementById("waist");
+      const bustEaseInput = document.getElementById("bust-ease");
+      const waistEaseInput = document.getElementById("waist-ease");
+      const reducedToggle = document.getElementById("reduced-dart");
+      const screenshotBtn = document.getElementById("export-screenshot");
+      const shareBtn = document.getElementById("share-url");
+      const screenshotFeedback = document.getElementById("screenshot-feedback");
+      const shareFeedback = document.getElementById("share-feedback");
+      let shareFeedbackTimeout;
+      let screenshotFeedbackTimeout;
+      const SCREENSHOT_WIDTH = 640;
+      const SCREENSHOT_SCALE = 3;
+      const DEFAULT_SHARE_URL = "https://morethanpatterns.github.io/PatternKit/panel/aldrichdartcalculator/";
+      const SHARE_TARGET_URL =
+        window.CALCULATOR_SHARE_URL ||
+        document.documentElement.getAttribute("data-share-url") ||
+        DEFAULT_SHARE_URL;
+
+      const outputs = {
+        neck: document.getElementById("neck-dart"),
+        waistDiff: document.getElementById("waist-diff"),
+        frontWaist: document.getElementById("front-waist"),
+        backWaist: document.getElementById("back-waist"),
+        frontSide: document.getElementById("front-side-waist"),
+        backSide: document.getElementById("back-side-waist"),
+      };
+
+      function formatValue(val) {
+        return Number.isFinite(val) ? val.toFixed(2) + " cm" : "–";
+      }
+
+      function computeFrontNeckDart(bust) {
+        if (!Number.isFinite(bust)) return NaN;
+        const anchorLowBust = 88;
+        const anchorHighBust = 110;
+        const anchorLowValue = 7;
+        const anchorHighValue = 10;
+
+        if (bust < anchorLowBust) {
+          const diff = ((anchorLowBust - bust) / 4) * 0.6;
+          return anchorLowValue - diff;
+        }
+        if (bust <= 104) {
+          const diff = ((bust - anchorLowBust) / 4) * 0.6;
+          return anchorLowValue + diff;
+        }
+        if (bust <= anchorHighBust) {
+          const diff = ((anchorHighBust - bust) / 6) * 0.6;
+          return anchorHighValue - diff;
+        }
+        const diff = ((bust - anchorHighBust) / 6) * 0.6;
+        return anchorHighValue + diff;
+      }
+
+      function computeWaistDiff(bust, waist, bustEase, waistEase) {
+        if (
+          !Number.isFinite(bust) ||
+          !Number.isFinite(waist) ||
+          !Number.isFinite(bustEase) ||
+          !Number.isFinite(waistEase)
+        ) {
+          return NaN;
+        }
+        const bustHalf = bust / 2 + bustEase;
+        const waistHalf = waist / 2 + waistEase;
+        return bustHalf - waistHalf;
+      }
+
+      function computeStandardWaistDarts(diff) {
+        if (!Number.isFinite(diff)) {
+          return {
+            front: NaN,
+            back: NaN,
+            sideFront: NaN,
+            sideBack: NaN,
+          };
+        }
+        const x = diff - 6;
+        const d = x / 4;
+        const backSide = d;
+        const frontSide = d + 1;
+        const front = d + 3;
+        const back = d + 2;
+
+        return {
+          front,
+          back,
+          sideFront: frontSide,
+          sideBack: backSide,
+        };
+      }
+
+      function computeReducedWaistDarts(diff) {
+        if (!Number.isFinite(diff)) {
+          return {
+            front: NaN,
+            back: NaN,
+            sideFront: NaN,
+            sideBack: NaN,
+          };
+        }
+        const reducedDiff = diff * 0.75;
+        const d = (reducedDiff - 5) / 4;
+        const backSide = d;
+        const frontSide = d + 1;
+        const front = d + 2.5;
+        const back = d + 1.5;
+
+        return {
+          front,
+          back,
+          sideFront: frontSide,
+          sideBack: backSide,
+        };
+      }
+
+      function update() {
+        const bust = parseFloat(bustInput.value);
+        const waist = parseFloat(waistInput.value);
+        const bustEase = parseFloat(bustEaseInput.value);
+        const waistEase = parseFloat(waistEaseInput.value);
+
+        const neckDart = computeFrontNeckDart(bust);
+        const waistDiff = computeWaistDiff(bust, waist, bustEase, waistEase);
+        const darts = reducedToggle.checked
+          ? computeReducedWaistDarts(waistDiff)
+          : computeStandardWaistDarts(waistDiff);
+        const distributedTotal =
+          darts.front + darts.back + darts.sideFront + darts.sideBack;
+
+        const displayedDiff = reducedToggle.checked
+          ? distributedTotal
+          : waistDiff;
+
+        outputs.neck.textContent = formatValue(neckDart);
+        outputs.waistDiff.textContent = formatValue(displayedDiff);
+        outputs.frontWaist.textContent = formatValue(darts.front);
+        outputs.backWaist.textContent = formatValue(darts.back);
+        outputs.frontSide.textContent = formatValue(darts.sideFront);
+        outputs.backSide.textContent = formatValue(darts.sideBack);
+      }
+
+      bustInput.addEventListener("input", update);
+      waistInput.addEventListener("input", update);
+      bustEaseInput.addEventListener("input", update);
+      waistEaseInput.addEventListener("input", update);
+      reducedToggle.addEventListener("input", update);
+
+      screenshotBtn.addEventListener("click", async () => {
+        let canvas = null;
+        try {
+          const html2canvas = await loadHtml2Canvas();
+          const originalPanel = document.querySelector(".panel");
+          const wrapper = document.createElement("div");
+          wrapper.className = "screenshot-wrapper";
+          const panel = originalPanel.cloneNode(true);
+          panel.style.width = `${SCREENSHOT_WIDTH}px`;
+          panel.style.maxWidth = `${SCREENSHOT_WIDTH}px`;
+          panel.style.margin = "0";
+          panel.style.boxSizing = "border-box";
+          wrapper.appendChild(panel);
+          document.body.appendChild(wrapper);
+
+          await (document.fonts ? document.fonts.ready : Promise.resolve());
+          const width = SCREENSHOT_WIDTH;
+          const height = Math.round(panel.scrollHeight || panel.offsetHeight);
+
+          canvas = await html2canvas(panel, {
+            backgroundColor: "#ffffff",
+            width,
+            height,
+            windowWidth: width,
+            windowHeight: height,
+            scale: SCREENSHOT_SCALE,
+          });
+
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(
+              (b) => (b ? resolve(b) : reject(new Error("Canvas conversion failed"))),
+              "image/png",
+              1,
+            );
+          });
+
+          if (
+            navigator.clipboard &&
+            navigator.clipboard.write &&
+            window.ClipboardItem
+          ) {
+            const item = new ClipboardItem({ "image/png": blob });
+            await navigator.clipboard.write([item]);
+            showScreenshotFeedback("Screenshot copied!");
+            document.body.removeChild(wrapper);
+            return;
+          }
+
+          throw new Error("Clipboard image support unavailable");
+        } catch (err) {
+          console.warn("Screenshot copy failed:", err);
+          if (canvas) {
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = "aldrich-dart-calculation.png";
+            link.click();
+            showScreenshotFeedback("Screenshot downloaded.");
+          } else {
+            showScreenshotFeedback("Unable to capture screenshot.", "error");
+          }
+        } finally {
+          const wrapper = document.querySelector(".screenshot-wrapper");
+          if (wrapper && wrapper.parentNode) {
+            wrapper.parentNode.removeChild(wrapper);
+          }
+        }
+      });
+
+      function showShareFeedback(message, state = "success") {
+        if (!shareFeedback) return;
+        shareFeedback.textContent = message;
+        shareFeedback.dataset.state = state;
+        clearTimeout(shareFeedbackTimeout);
+        shareFeedbackTimeout = setTimeout(() => {
+          shareFeedback.textContent = "";
+          delete shareFeedback.dataset.state;
+        }, 2200);
+      }
+
+      function showScreenshotFeedback(message, state = "success") {
+        if (!screenshotFeedback) return;
+        screenshotFeedback.textContent = message;
+        screenshotFeedback.dataset.state = state;
+        clearTimeout(screenshotFeedbackTimeout);
+        screenshotFeedbackTimeout = setTimeout(() => {
+          screenshotFeedback.textContent = "";
+          delete screenshotFeedback.dataset.state;
+        }, 2200);
+      }
+
+      async function copyToClipboardFallback(url) {
+        try {
+          const textarea = document.createElement("textarea");
+          textarea.value = url;
+          textarea.setAttribute("readonly", "");
+          textarea.style.position = "absolute";
+          textarea.style.left = "-9999px";
+          document.body.appendChild(textarea);
+          const selection = document.getSelection();
+          const selectedRange =
+            selection && selection.rangeCount > 0
+              ? selection.getRangeAt(0)
+              : null;
+          textarea.select();
+          const succeeded = document.execCommand("copy");
+          document.body.removeChild(textarea);
+          if (selectedRange && selection) {
+            selection.removeAllRanges();
+            selection.addRange(selectedRange);
+          }
+          return succeeded;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      async function handleShareClick() {
+        const url = SHARE_TARGET_URL;
+        try {
+          if (navigator.share) {
+            await navigator.share({
+              title: document.title || "Aldrich Dart Calculator",
+              text: "Check out this Aldrich dart calculator.",
+              url,
+            });
+            showShareFeedback("Share dialog opened.");
+            return;
+          }
+        } catch (err) {
+          console.warn("Web Share API failed:", err);
+        }
+
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+            showShareFeedback("Link copied!");
+            return;
+          }
+        } catch (err) {
+          console.warn("Clipboard API failed:", err);
+        }
+
+        const fallbackSuccess = await copyToClipboardFallback(url);
+        if (fallbackSuccess) {
+          showShareFeedback("Link copied!");
+          return;
+        }
+
+        window.prompt("Copy this link:", url);
+        showShareFeedback("Copy the link manually.", "error");
+      }
+
+      if (shareBtn) {
+        shareBtn.addEventListener("click", handleShareClick);
+      }
+
+      update();
+    </script>
+  </body>
+</html>
