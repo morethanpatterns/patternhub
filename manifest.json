@@ -2,8 +2,30 @@
   "name": "PatternHub",
   "version": "1.0.0",
   "schema": "https://patternhub.dev/schema/v1",
-  "updated": "2025-11-08",
+  "updated": "2025-11-09",
   "authors": [
+    {
+      "id": "aldrich",
+      "name": "Aldrich",
+      "blocks": [
+        {
+          "id": "bodice",
+          "title": "Aldrich Bodice Block",
+          "category": "Bodice",
+          "versions": [
+            {
+              "version": "1",
+              "status": "stable",
+              "path": "Aldrich/Bodice/aldrich_close_fitting_bodice_v1.jsx",
+              "label": "Close Fitting Bodice",
+              "requires": {
+                "illustrator": ">=25"
+              }
+            }
+          ]
+        }
+      ]
+    },
     {
       "id": "armstrong",
       "name": "Armstrong",
@@ -18,6 +40,28 @@
               "status": "stable",
               "path": "Armstrong/Bodice/armstrong_bodice_draft_v1.jsx",
               "label": "Bodice Draft",
+              "requires": {
+                "illustrator": ">=25"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hofenbitzer",
+      "name": "Hofenbitzer",
+      "blocks": [
+        {
+          "id": "bodice",
+          "title": "Hofenbitzer Bodice Block",
+          "category": "Bodice",
+          "versions": [
+            {
+              "version": "1",
+              "status": "stable",
+              "path": "Hofenbitzer/Bodice/hofenbitzer_casual_bodice_v1.jsx",
+              "label": "Casual Bodice",
               "requires": {
                 "illustrator": ">=25"
               }
