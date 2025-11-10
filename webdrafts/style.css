@@ -341,7 +341,7 @@ body {
   gap: 4px;
 }
 
-input,
+input:not([type="checkbox"]),
 select {
   width: 100%;
   max-width: 100%;
@@ -353,6 +353,14 @@ select {
   background: #fff;
   box-sizing: border-box;
   min-width: 0;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
 }
 
 .mini-dropdown {
