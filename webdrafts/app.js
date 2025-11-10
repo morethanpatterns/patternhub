@@ -181,7 +181,7 @@ const HOFENBITZER_SECONDARY_MEASUREMENTS = [
   { id: "HiD", label: "HiD", defaultValue: HOFENBITZER_DEFAULTS.HiD },
   { id: "ShA", label: "ShA (deg)", defaultValue: HOFENBITZER_DEFAULTS.ShA, step: 0.1 },
   { id: "BrD", label: "BrD", defaultValue: HOFENBITZER_DEFAULTS.BrD },
-  { id: "ShoulderDifference", label: "Shoulder Difference (deg)", defaultValue: HOFENBITZER_DEFAULTS.ShoulderDifference, step: 0.1 },
+  { id: "ShoulderDifference", label: "Shoulder Diff. (deg)", defaultValue: HOFENBITZER_DEFAULTS.ShoulderDifference, step: 0.1 },
 ];
 
 const HOFENBITZER_MARKER_RADIUS_CM = 0.25;
@@ -343,37 +343,38 @@ function initHofenbitzerControls() {
   hofenbitzerUi.secondaryRows = {};
   secondaryHost.innerHTML = "";
 
-  HOFENBITZER_SECONDARY_MEASUREMENTS.forEach((def) => {
-    const chip = document.createElement("div");
-    chip.className = "key-chip";
+  const secondaryRows = [];
+  for (let i = 0; i < HOFENBITZER_SECONDARY_MEASUREMENTS.length; i += 3) {
+    secondaryRows.push(HOFENBITZER_SECONDARY_MEASUREMENTS.slice(i, i + 3));
+  }
 
-    const label = document.createElement("label");
-    label.className = "key-chip__label";
-    const inputId = `hofKey-${def.id}`;
-    label.setAttribute("for", inputId);
-    label.textContent = def.label;
-    chip.appendChild(label);
+  secondaryRows.forEach((group) => {
+    const rowEl = document.createElement("section");
+    rowEl.className = "measure-block";
+    const inputsWrapper = document.createElement("div");
+    inputsWrapper.className = "measure-row";
+    rowEl.appendChild(inputsWrapper);
 
-    const input = document.createElement("input");
-    input.type = "number";
-    input.id = inputId;
-    input.step = def.step || 0.1;
-    input.value = formatHofenbitzerValue(def.defaultValue);
-    input.inputMode = "decimal";
-    input.classList.add("form-input");
-    chip.appendChild(input);
+    group.forEach((def) => {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.step = def.step || 0.1;
+      input.value = formatHofenbitzerValue(def.defaultValue);
+      input.inputMode = "decimal";
+      inputsWrapper.appendChild(createHofenbitzerField(def.label, input));
 
-    secondaryHost.appendChild(chip);
+      hofenbitzerUi.secondaryRows[def.id] = {
+        def,
+        input,
+      };
 
-    hofenbitzerUi.secondaryRows[def.id] = {
-      def,
-      input,
-    };
-
-    input.addEventListener("input", () => {
-      updateHofenbitzerSecondaryRow(def.id);
-      scheduleRegen();
+      input.addEventListener("input", () => {
+        updateHofenbitzerSecondaryRow(def.id);
+        scheduleRegen();
+      });
     });
+
+    secondaryHost.appendChild(rowEl);
   });
 
   const fitSelect = document.getElementById("hofenbitzerFitProfile");

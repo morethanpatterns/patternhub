@@ -213,10 +213,10 @@ body {
 }
 
 .hof-card {
-  padding: 16px;
-  border: 1px solid #cbd5f5;
-  border-radius: 8px;
-  background: #fff;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .hof-card h2 {
@@ -245,24 +245,21 @@ body {
 .hofenbitzer-measure-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  margin: 8px 0 12px;
 }
 
 .measure-block {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--ui-border, #e6edf3);
-  overflow: visible;
-}
-
-.measure-block:last-child {
+  padding: 6px 0;
   border-bottom: none;
+  overflow: visible;
 }
 
 .measure-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
-  column-gap: 16px;
-  row-gap: 10px;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  column-gap: 20px;
+  row-gap: 12px;
   width: 100%;
   min-width: 0;
 }
@@ -313,57 +310,6 @@ body {
   font-weight: 700;
 }
 
-.key-lengths-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 12px 0 6px;
-}
-
-.key-lengths {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(150px, 1fr));
-  gap: 8px 14px;
-  align-items: center;
-  margin: 4px 0;
-  width: 100%;
-}
-
-.key-chip {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  align-items: center;
-  column-gap: 8px;
-  min-width: 0;
-}
-
-.key-chip__label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #2f3440;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-}
-
-.key-chip input {
-  height: 30px;
-  padding: 4px 8px;
-  font-size: 14px;
-  border: 1px solid #d0d7e2;
-  border-radius: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.key-chip input:focus {
-  border-color: #8bb4ff;
-  box-shadow: 0 0 0 3px rgba(139, 180, 255, 0.25);
-}
 
 .form-grid {
   display: grid;
@@ -589,8 +535,8 @@ svg {
 
 @media (max-width: 900px) {
   .measure-row {
-    grid-template-columns: repeat(3, minmax(110px, 1fr));
-    column-gap: 12px;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    column-gap: 16px;
     row-gap: 12px;
   }
 
@@ -604,6 +550,7 @@ svg {
 @media (max-width: 640px) {
   .measure-row {
     grid-template-columns: 1fr;
+    column-gap: 0;
   }
 }
 
