@@ -157,10 +157,10 @@ const HOFENBITZER_FIT_PROFILES = Object.freeze([
 const HOFENBITZER_PRIMARY_MEASUREMENTS = (() => {
   const profile = HOFENBITZER_FIT_PROFILES[HOFENBITZER_DEFAULT_FIT_INDEX] || { ease: {} };
   return [
-    { id: "AhD", label: "AhD", measurementDefault: HOFENBITZER_DEFAULTS.AhD, easeDefault: profile.ease.AhD || 0, fitKey: "AhD" },
     { id: "BrC", label: "BrC", measurementDefault: HOFENBITZER_DEFAULTS.BrC, easeDefault: profile.ease.BrC || 0, fitKey: "BrC" },
     { id: "WaC", label: "WaC", measurementDefault: HOFENBITZER_DEFAULTS.WaC, easeDefault: profile.ease.WaC || 0, fitKey: "WaC" },
     { id: "HiC", label: "HiC", measurementDefault: HOFENBITZER_DEFAULTS.HiC, easeDefault: profile.ease.HiC || 0, fitKey: "HiC" },
+    { id: "AhD", label: "AhD", measurementDefault: HOFENBITZER_DEFAULTS.AhD, easeDefault: profile.ease.AhD || 0, fitKey: "AhD" },
     { id: "BG", label: "BG", measurementDefault: HOFENBITZER_DEFAULTS.BG, easeDefault: profile.ease.BG || 0, fitKey: "BG" },
     { id: "AG", label: "AG", measurementDefault: HOFENBITZER_DEFAULTS.AG, easeDefault: profile.ease.AG || 0, fitKey: "AG" },
     { id: "BrG", label: "BrG", measurementDefault: HOFENBITZER_DEFAULTS.BrG, easeDefault: profile.ease.BrG || 0, fitKey: "BrG" },
@@ -320,7 +320,22 @@ function initHofenbitzerControls() {
     }
 
     const initialFinal = def.measurementDefault + (def.hasEase !== false ? def.easeDefault || 0 : 0);
-    const finalField = createHofenbitzerFinalField("Final", formatHofenbitzerValue(initialFinal));
+    const finalLabelMap = {
+      AhD: "AhD+",
+      BrC: "BrC+",
+      WaC: "WaW",
+      HiC: "HiW",
+      BG: "BG+",
+      AG: "AG+",
+      BrG: "BrG+",
+      ShG: "fShS",
+      BL: "BL",
+      FL: "FL",
+    };
+    const finalField = createHofenbitzerFinalField(
+      finalLabelMap[def.id] || "Final",
+      formatHofenbitzerValue(initialFinal)
+    );
     inputsWrapper.appendChild(finalField.field);
 
     primaryHost.appendChild(rowEl);
@@ -3370,6 +3385,7 @@ function initApp() {
   patternPlaceholder = document.getElementById("patternPlaceholder");
   enhancePatternSelect();
   enhanceBustCupSelect();
+  enhanceFitProfileSelect();
   initAldrichAutoFields();
   initHofenbitzerControls();
   Object.entries(PATTERN_CONFIGS).forEach(([key, config]) => {
@@ -3571,11 +3587,11 @@ function enhancePatternSelect() {
   select.classList.add("pattern-picker__native");
 }
 
-function enhanceBustCupSelect() {
-  const select = document.getElementById("bustCup");
-  if (!select || select.dataset.enhanced === "true") return;
-  const label = select.parentElement;
-  if (!label) return;
+function enhanceMiniDropdownSelect(select, options = {}) {
+  if (!select || select.dataset.miniDropdown === "true") return;
+  const host = options.host || select.parentElement;
+  if (!host) return;
+  const placeholder = options.placeholder || "Select";
 
   const dropdown = document.createElement("div");
   dropdown.className = "mini-dropdown";
@@ -3592,14 +3608,14 @@ function enhanceBustCupSelect() {
   menu.setAttribute("role", "listbox");
   dropdown.appendChild(menu);
 
-  label.insertBefore(dropdown, select);
+  host.insertBefore(dropdown, select);
   select.classList.add("mini-dropdown__native");
 
   const buttons = [];
 
   const sync = () => {
     const selectedOption = select.options[select.selectedIndex];
-    toggle.textContent = selectedOption ? selectedOption.textContent : "Select";
+    toggle.textContent = selectedOption ? selectedOption.textContent : placeholder;
     buttons.forEach((btn) => {
       const isSelected = btn.dataset.value === select.value;
       btn.classList.toggle("is-selected", isSelected);
@@ -3669,7 +3685,19 @@ function enhanceBustCupSelect() {
   select.addEventListener("change", sync);
   sync();
 
+  select.dataset.miniDropdown = "true";
   select.dataset.enhanced = "true";
+}
+
+function enhanceBustCupSelect() {
+  const select = document.getElementById("bustCup");
+  enhanceMiniDropdownSelect(select, { placeholder: "Select" });
+}
+
+function enhanceFitProfileSelect() {
+  const select = document.getElementById("hofenbitzerFitProfile");
+  const host = select?.closest(".hof-fit-control__select");
+  enhanceMiniDropdownSelect(select, { host, placeholder: "Select Fit" });
 }
 
 function updatePatternVisibility() {

@@ -229,17 +229,59 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
-.hof-fit-control__label {
-  font-size: 0.85rem;
+.hof-card-subtitle {
+  margin: 0 0 8px;
+  font-size: 1rem;
   font-weight: 600;
-  color: #475569;
+  color: #0f172a;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.hof-fit-control__select {
+  position: relative;
 }
 
 .hof-fit-control__select select {
   width: 100%;
+  padding: 6px 28px 6px 10px;
+  border: 1px solid #cbd5f5;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  appearance: none;
+}
+
+.hof-fit-control__select select:focus {
+  border-color: #8bb4ff;
+  box-shadow: 0 0 0 3px rgba(139, 180, 255, 0.2);
+  outline: none;
+}
+
+.hof-fit-control__select select:hover {
+  border-color: #b6c7f0;
+}
+
+.hof-fit-control__select select option {
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #0f172a;
 }
 
 .hofenbitzer-measure-grid {
@@ -318,6 +360,8 @@ body {
 
 .form-input.final {
   font-weight: 700;
+  background: #f1f5ff;
+  border-color: #c7dbff;
 }
 
 .measure-row input,
@@ -574,4 +618,20 @@ svg {
   .key-lengths {
     grid-template-columns: 1fr;
   }
+}
+.hof-fit-control__select select option {
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: radial-gradient(circle at top, #f5f8ff, #eef2ff);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #0f172a;
+  margin: 4px;
+}
+
+.hof-fit-control__select select option:checked {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  border-color: #93c5fd;
 }
