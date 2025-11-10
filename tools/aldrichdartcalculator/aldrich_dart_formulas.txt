@@ -1,0 +1,42 @@
+Neck Dart Calculation (Method One)
+Bust 88cm = 7cm Dart
+
+For bust less than 88cm
+Formula = (88 - Bust) / 4, * 0.6, - 7
+
+For bust greater than 88cm up to 104cm
+Formula = (Bust - 88) / 4, * 0.6, + 7
+
+For bust between 104cm and 110cm
+Formula = (110 - Bust) / 6, * 0.6, - 10
+
+Bust 110cm = 10cm Dart
+
+For bust greater than 110cm
+Formula = (Bust - 110) / 6, * 0.6, + 10
+
+Neck Dart Calculation – simpler but not the same as the book's and fails for bigger sizes (Method Two)
+x = Bust - Chest - Back Width
+Neck Dart = x/3
+
+Waist Dart Calculation
+Waist Difference = (Bust + Ease) - (Waist + Ease)
+x = Waist Difference - 6 (+1cm for the Front Side Waist Dart, +3cm for the Front Waist Dart, +2cm for the Back Waist Dart)
+x/4 (for 4 darts) = D
+
+Waist Dart Distribution
+Back Side Waist Dart = D
+Front Side Waist Dart = D + 1
+Back Waist Dart = D + 2
+Front Waist Dart = D + 3
+
+Reduced Darting
+Waist Difference = (Bust + Ease) - (Waist + Ease)
+x = (0.75% * Waist Difference) - 5 (+1cm for the Front Side Waist Dart, +1.5cm for the Back Waist Dart, +2.5cm for the Front Waist Dart)
+x/4 (for 4 darts) = D
+
+Waist Dart Distribution
+Back Side Waist Dart = D
+Front Side Waist Dart = D + 1
+Back Waist Dart = D + 1.5
+Front Waist Dart = D + 2.5
