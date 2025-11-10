@@ -2294,7 +2294,7 @@ function generateHofenbitzerCasualBodice(params) {
         layer: backLayer,
         name: "Back Neck Curve",
         bulgeCm: backBulge,
-        startHandleOverride: { x: point1a.x + 0.3, y: point1a.y + handleLength },
+        startHandleOverride: { x: point1a.x + 0.6, y: point1a.y + handleLength },
         endHandleOverride: { x: point2.x - handleLength, y: point2.y },
       });
     }
