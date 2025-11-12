@@ -991,7 +991,7 @@ function drawBezierArcSegment(targetLayer, startPoint, controlPoint, endPoint, o
 
   const backOrigin = {
     x: pointA.x - BACK_OFFSET_IN,
-    y: pointB.y - (backFullLength + 0.125),
+    y: pointA.y,
   };
   const backCoord = (dx, dy) => ({
     x: backOrigin.x + dx,
