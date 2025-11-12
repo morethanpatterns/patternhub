@@ -1,19 +1,3 @@
-/**
- * Make Paths Equal
- *
- * Duplicates the length of the first selected open line onto the second item
- * without changing direction. You can work in two ways:
- *   • Select two two-point open paths (pick the reference first, target second).
- *   • Select two individual endpoints (anchors) belonging to such paths.
- * In endpoint mode, the target anchor you select is the one that moves; the
- * opposite anchor on that path stays fixed while the selected point slides
- * along the existing direction to match the reference length.
- *
- * Usage:
- *   1. Select two open paths (first = reference, second = target).
- *   2. Run this script. The second path will adopt the first path's length.
- */
-
 var MATCH_TOLERANCE = 0.01;
 var LENGTH_EPSILON = 1e-6;
 
