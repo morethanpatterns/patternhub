@@ -8,8 +8,12 @@
     //  - Relative (e.g. 'MiniScripts/true_darts.jsx') resolved next to this panel
     //  - Absolute (e.g. 'D:/Scripts/foo.jsx')
     var SCRIPTS = [
-        { name: "True Darts", path: "MiniScripts/true_darts.jsx", color: [0.62, 0.35, 0.71], text: [1, 1, 1] },
-        { name: "Equal Paths", path: "MiniScripts/make_paths_equal.jsx", color: [0.32, 0.51, 0.78], text: [1, 1, 1] }
+        { name: "True Darts", path: "../MiniScripts/true_darts.jsx", color: [0.62, 0.35, 0.71], text: [1, 1, 1] },
+        { name: "Equal Paths", path: "../MiniScripts/make_paths_equal.jsx", color: [0.32, 0.51, 0.78], text: [1, 1, 1] },
+        { name: "Add Midpoint", path: "../MiniScripts/add_midpoint.jsx", color: [0.85, 0.33, 0.19], text: [1, 1, 1] },
+        { name: "Create Dart", path: "../MiniScripts/create_dart.jsx", color: [0.20, 0.6, 0.45], text: [1, 1, 1] },
+        { name: "Draw & Label", path: "../MiniScripts/draw_and_label.jsx", color: [0.50, 0.35, 0.85], text: [1, 1, 1] },
+        { name: "Mark", path: "../MiniScripts/mark_along_path.jsx", color: [0.95, 0.55, 0.15], text: [0.1, 0.1, 0.1] }
     ];
     // =====================================================================
 
