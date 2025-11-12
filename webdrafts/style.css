@@ -528,6 +528,16 @@ input[type="checkbox"] {
   gap: 12px;
 }
 
+.actions button,
+.actions .link-button {
+  width: 100%;
+}
+
+.actions.secondary button,
+.actions.secondary .link-button {
+  width: auto;
+}
+
 button,
 .link-button {
   width: auto;
@@ -783,7 +793,7 @@ button,
 #preview {
   position: relative;
   display: grid;
-  place-items: start start;
+  place-items: start center;
   width: 100%;
   min-height: 400px;
   height: 100%;
@@ -807,7 +817,7 @@ button,
   width: auto;
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: center;
   pointer-events: none;
 }
 
