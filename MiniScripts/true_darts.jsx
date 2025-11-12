@@ -1,4 +1,4 @@
-var CENTER_LINE_DASH = [12, 6];
+var CENTER_LINE_DASH = [25, 12];
 
 function main() {
   if (!app.documents.length) {
