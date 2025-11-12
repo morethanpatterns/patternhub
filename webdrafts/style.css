@@ -529,13 +529,15 @@ input[type="checkbox"] {
 
 .actions.secondary {
   margin-top: 12px;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  width: 100%;
 }
 
 button,
 .link-button {
-  flex: 1;
+  width: auto;
   padding: 10px 14px;
   font-size: 1rem;
   border: none;
@@ -545,11 +547,6 @@ button,
   color: #fff;
   text-align: center;
   text-decoration: none;
-}
-
-button:hover,
-.link-button:hover {
-  background: #0b4dd8;
 }
 
 .toggles {
@@ -648,12 +645,7 @@ button:hover,
   border: none;
   font-weight: 600;
   color: #0f172a;
-  cursor: pointer;
-}
-
-.draft-entry__select:focus-visible {
-  outline: 2px solid #93c5fd;
-  outline-offset: 2px;
+  cursor: default;
 }
 
 .draft-entry__meta {
