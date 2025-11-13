@@ -1,7 +1,6 @@
 /*
  Basic Skirt by Guido Hofenbitzer
  ------------------------------------------------
- - Center front/back, waist/hip/hem guides
  - ScriptUI measurement panel (cm) with default size 38 inputs
  - Artboard resizes with 10 cm margin around content
 */
