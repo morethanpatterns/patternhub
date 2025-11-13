@@ -440,12 +440,13 @@
             var startPoint = path.pathPoints[0];
             startPoint.pointType = PointType.SMOOTH;
             startPoint.leftDirection = startPt;
-            startPoint.rightDirection = startPt;
+            var startHandle = options.startHandle || startPt;
+            startPoint.rightDirection = startHandle;
 
             var endPoint = path.pathPoints[1];
             endPoint.pointType = PointType.SMOOTH;
-            var handle = options.handlePoint || endPt;
-            endPoint.leftDirection = handle;
+            var endHandle = options.endHandle || options.handlePoint || endPt;
+            endPoint.leftDirection = endHandle;
             endPoint.rightDirection = endPt;
         }
 
@@ -649,6 +650,16 @@
         var line13Right = drawLine(layers.dartsLayer, P13TopRight[0], P13TopRight[1], P13Base[0], P13Base[1], null, []);
         try { line13Right.name = 'Front Dart Right'; } catch (eDartRight) {}
         addParallelLineLabel('Front Dart', P13TopLeft, P13TopRight, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+    }
+
+    if (P1 && P13TopLeft) {
+        var frontCurveStartHandle = [P1[0] + cm(13.6), P1[1]];
+        var frontCurveEndHandle = [P13TopLeft[0] - cm(0.54), P13TopLeft[1]];
+        var cfFrontDartCurve = drawCurveWithHandle(layers.shapingLayer, [P1[0], P1[1]], [P13TopLeft[0], P13TopLeft[1]], null, {
+            startHandle: frontCurveStartHandle,
+            endHandle: frontCurveEndHandle
+        });
+        try { cfFrontDartCurve.name = 'Front Waist Curve'; } catch (eFrontWaistCurve) {}
     }
 
     if (singleBackDashLeft && singleBackDashRight) {
