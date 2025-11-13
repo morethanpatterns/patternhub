@@ -39,7 +39,7 @@
     var measurementLabels = {};
     var measurementOrder = [];
     var measurementPalette = null;
-    var shouldShowMeasurementPalette = true;
+    var shouldShowMeasurementPalette = false;
 
     var DART_KEYS = ['SideDart','FrontDart','BackDart1','BackDart2'];
 
@@ -934,8 +934,8 @@
         var dialogRows = [
             { number: 1, main: { type: 'input', key: 'HiC', label: 'HiC' }, ease: { type: 'input', key: 'HipEase', label: 'Ease' }, construction: { type: 'construction', key: 'HiW', label: 'HiW' } },
             { number: 2, main: { type: 'input', key: 'WaC', label: 'WaC' }, ease: { type: 'input', key: 'WaistEase', label: 'Ease' }, construction: { type: 'construction', key: 'WaW', label: 'WaW' } },
-            { number: 3, main: { type: 'input', key: 'HiD', label: 'HiD' }, ease: null, construction: { type: 'construction', key: 'HiDCons', label: 'HiD' } },
-            { number: 4, main: { type: 'input', key: 'MoL', label: 'MoL' }, ease: null, construction: { type: 'construction', key: 'MoLCons', label: 'MoL' } },
+            { number: 3, main: { type: 'input', key: 'HiD', label: 'HiD' }, ease: null, construction: null },
+            { number: 4, main: { type: 'input', key: 'MoL', label: 'MoL' }, ease: null, construction: null },
             { number: 5, main: { type: 'derived', key: 'WaDif', label: 'WaDif' }, ease: null, construction: null },
             { number: 6, main: { type: 'derivedInput', key: 'SideDart', label: 'Side dart' }, ease: null, construction: null },
             { number: 7, main: { type: 'derivedInput', key: 'FrontDart', label: 'Front dart' }, ease: null, construction: null },
