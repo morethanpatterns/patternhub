@@ -4,7 +4,7 @@ const MM_PER_IN = 25.4;
 const PAGE_WIDTH_MM = 600;
 const PAGE_HEIGHT_MM = 600;
 const PAGE_MARGIN_MM = 25;
-const PADDING_MM = 100;
+const PADDING_MM = 60;
 const TOP_PADDING_MM = 10;
 const MARKER_RADIUS_MM = 2.6;
 const LABEL_FONT_SIZE_MM = 4;
@@ -991,7 +991,7 @@ function drawBezierArcSegment(targetLayer, startPoint, controlPoint, endPoint, o
 
   const backOrigin = {
     x: pointA.x - BACK_OFFSET_IN,
-    y: pointB.y - (backFullLength + 0.125),
+    y: pointA.y,
   };
   const backCoord = (dx, dy) => ({
     x: backOrigin.x + dx,
@@ -3283,6 +3283,50 @@ function downloadSVG(svg, filename = "armstrong_bodice.svg") {
   URL.revokeObjectURL(url);
 }
 
+const layerManager = {
+  overlay: null,
+  list: null,
+  layers: [],
+  closeButton: null,
+  isOpen: false,
+};
+const DRAFT_COLOR_PALETTE = [
+  "#111111",
+  "#b91c1c",
+  "#0f766e",
+  "#c026d3",
+  "#eab308",
+  "#0ea5e9",
+  "#16a34a",
+  "#f97316",
+];
+const DUPLICATE_COLOR_PALETTE = [
+  "#b91c1c",
+  "#0f766e",
+  "#7c3aed",
+  "#2563eb",
+  "#b45309",
+  "#0f172a",
+  "#047857",
+  "#c026d3",
+];
+const draftStores = {
+  armstrong: createDraftStore(),
+  aldrich: createDraftStore(),
+  hofenbitzerCasual: createDraftStore(),
+};
+let activePatternKey = "armstrong";
+const svgSerializer = new XMLSerializer();
+const svgDomParser = typeof DOMParser !== "undefined" ? new DOMParser() : null;
+
+function createDraftStore() {
+  return {
+    drafts: [],
+    activeId: null,
+    counter: 1,
+  };
+}
+
 let preview = null;
 let currentSvg = null;
 let regenTimer = null;
@@ -3308,6 +3352,9 @@ const PATTERN_CONFIGS = {
     downloadId: "download",
     shareId: "share",
     filename: "armstrong_bodice.svg",
+    duplicateId: "duplicateDraftArmstrong",
+    layerButtonId: "manageLayersArmstrong",
+    draftListId: "draftListArmstrong",
   },
   aldrich: {
     title: "Aldrich's Close Fitting Bodice",
@@ -3317,6 +3364,9 @@ const PATTERN_CONFIGS = {
     downloadId: "downloadAldrich",
     shareId: "shareAldrich",
     filename: "aldrich_close_fitting_bodice.svg",
+    duplicateId: "duplicateDraftAldrich",
+    layerButtonId: "manageLayersAldrich",
+    draftListId: "draftListAldrich",
   },
   hofenbitzerCasual: {
     title: "Hofenbitzer's Casual Bodice",
@@ -3326,6 +3376,9 @@ const PATTERN_CONFIGS = {
     downloadId: "downloadHofenbitzer",
     shareId: "shareHofenbitzer",
     filename: "hofenbitzer_casual_bodice.svg",
+    duplicateId: "duplicateDraftHofenbitzer",
+    layerButtonId: "manageLayersHofenbitzer",
+    draftListId: "draftListHofenbitzer",
   },
 };
 
@@ -3335,9 +3388,8 @@ function regen() {
     regenTimer = null;
   }
   if (!preview) return;
-  preview.innerHTML = "";
-  const selectedPattern = patternSelect ? patternSelect.value : "armstrong";
-  const config = PATTERN_CONFIGS[selectedPattern];
+  const patternKey = getCurrentPatternKey();
+  const config = PATTERN_CONFIGS[patternKey];
   if (!config) {
     const label = patternSelect
       ? patternSelect.options[patternSelect.selectedIndex]?.text || "This draft"
@@ -3346,18 +3398,353 @@ function regen() {
     currentSvg = null;
     return;
   }
-  if (selectedPattern === "aldrich") {
+  ensureInitialDraft(patternKey);
+  persistActiveDraftInputs(patternKey);
+  if (patternKey === "aldrich") {
     updateAldrichDerivedFields();
   }
-  currentSvg = config.generate(config.readParams());
-  preview.appendChild(currentSvg);
+  const svg = config.generate(config.readParams());
+  const activeDraft = getActiveDraft(patternKey);
+  if (svg && activeDraft) {
+    applyDraftColor(svg, activeDraft.color, true);
+    activeDraft.svgMarkup = svgSerializer.serializeToString(svg);
+  }
+  renderDraftPreviews(patternKey, svg);
+  renderDraftList(patternKey);
+  hydrateLayerTools(currentSvg);
   if (typeof window !== "undefined" && window.localStorage) {
     try {
-      window.localStorage.setItem("patternhub:lastPattern", selectedPattern);
+      window.localStorage.setItem("patternhub:lastPattern", patternKey);
     } catch (errStorePattern) {
       console.warn("Unable to persist pattern selection:", errStorePattern);
     }
   }
+}
+
+function initDraftManager() {
+  Object.keys(PATTERN_CONFIGS).forEach((patternKey) => {
+    ensureInitialDraft(patternKey);
+  });
+}
+
+function ensureInitialDraft(patternKey) {
+  const store = getDraftStore(patternKey);
+  if (!store || store.drafts.length) return;
+  const inputState = captureInputState(patternKey);
+  const draft = createDraft(patternKey, inputState);
+  store.drafts.push(draft);
+  store.activeId = draft.id;
+}
+
+function createDraft(patternKey, inputState = {}) {
+  const store = getDraftStore(patternKey);
+  if (!store) return null;
+  const draftNumber = store.counter++;
+  return {
+    id: `${patternKey}-draft-${draftNumber}`,
+    name: `Draft ${draftNumber}`,
+    pattern: patternKey,
+    inputState: cloneInputState(inputState),
+    svgMarkup: null,
+    visible: true,
+    createdAt: Date.now(),
+    color: DRAFT_COLOR_PALETTE[(draftNumber - 1) % DRAFT_COLOR_PALETTE.length],
+  };
+}
+
+function cloneInputState(state = {}) {
+  const clone = {};
+  Object.keys(state || {}).forEach((key) => {
+    const value = state[key];
+    clone[key] = value ? { ...value } : value;
+  });
+  return clone;
+}
+
+function captureInputState(patternKey) {
+  const config = PATTERN_CONFIGS[patternKey];
+  const section = config?.elementId ? document.getElementById(config.elementId) : null;
+  const state = {};
+  if (!section) return state;
+  section.querySelectorAll("input, select, textarea").forEach((el) => {
+    if (!el.id) return;
+    if (el.type === "checkbox") {
+      state[el.id] = { type: "checkbox", value: el.checked };
+    } else {
+      state[el.id] = { type: "value", value: el.value };
+    }
+  });
+  return state;
+}
+
+function applyInputState(patternKey, state = {}) {
+  Object.entries(state || {}).forEach(([id, entry]) => {
+    const el = document.getElementById(id);
+    if (!el || !entry) return;
+    if (entry.type === "checkbox") {
+      el.checked = Boolean(entry.value);
+    } else {
+      el.value = entry.value ?? "";
+    }
+  });
+}
+
+function applyActiveDraftInputs(patternKey) {
+  const activeDraft = getActiveDraft(patternKey);
+  if (!activeDraft) return;
+  applyInputState(patternKey, activeDraft.inputState);
+}
+
+function getDraftStore(patternKey) {
+  return draftStores[patternKey];
+}
+
+function getActiveDraft(patternKey) {
+  const store = getDraftStore(patternKey);
+  if (!store) return null;
+  return store.drafts.find((draft) => draft.id === store.activeId) || store.drafts[0] || null;
+}
+
+function renderDraftList(patternKey) {
+  const config = PATTERN_CONFIGS[patternKey];
+  const containerId = config?.draftListId;
+  const container = containerId ? document.getElementById(containerId) : null;
+  if (!container) return;
+  container.innerHTML = "";
+  const store = getDraftStore(patternKey);
+  if (!store || !store.drafts.length) {
+    const empty = document.createElement("p");
+    empty.className = "draft-panel__empty";
+    empty.textContent = "Duplicate the draft to start comparing.";
+    container.appendChild(empty);
+    return;
+  }
+  store.drafts.forEach((draft) => {
+    const row = document.createElement("div");
+    row.className = "draft-entry";
+    if (draft.id === store.activeId) {
+      row.classList.add("is-active");
+    }
+    const swatch = document.createElement("span");
+    swatch.className = "draft-entry__swatch";
+    swatch.style.background = draft.color || "#94a3b8";
+    row.appendChild(swatch);
+    const selectBtn = document.createElement("button");
+    selectBtn.type = "button";
+    selectBtn.className = "draft-entry__select";
+    selectBtn.textContent = draft.name;
+    selectBtn.addEventListener("click", () => selectDraft(patternKey, draft.id));
+    const meta = document.createElement("span");
+    meta.className = "draft-entry__meta";
+    meta.textContent = draft.visible ? "Visible" : "Hidden";
+    const toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.className = "draft-entry__toggle";
+    toggleBtn.textContent = draft.visible ? "Hide" : "Show";
+    toggleBtn.addEventListener("click", () => toggleDraftVisibility(patternKey, draft.id));
+    row.appendChild(selectBtn);
+    row.appendChild(meta);
+    row.appendChild(toggleBtn);
+    container.appendChild(row);
+  });
+}
+
+function renderDraftPreviews(patternKey, liveSvg = null) {
+  if (!preview) return;
+  preview.innerHTML = "";
+  currentSvg = null;
+  const store = getDraftStore(patternKey);
+  if (!store || !store.drafts.length) {
+    showPreviewMessage("Duplicate a draft to start comparing.");
+    return;
+  }
+  if (!store.activeId && store.drafts.length) {
+    store.activeId = store.drafts[0].id;
+  }
+  if (store.activeId) {
+    const activeDraftExists = store.drafts.some((draft) => draft.id === store.activeId && draft.visible);
+    if (!activeDraftExists) {
+      const firstVisible = store.drafts.find((draft) => draft.visible);
+      if (firstVisible) {
+        store.activeId = firstVisible.id;
+      }
+    }
+  }
+  const activeId = store.activeId;
+  let visibleCount = 0;
+  store.drafts.forEach((draft) => {
+    if (!draft.visible || !draft.svgMarkup) return;
+    let svgNode = null;
+    const isActive = draft.id === activeId;
+    if (isActive && liveSvg) {
+      svgNode = liveSvg;
+    } else {
+      svgNode = importSvgMarkup(draft.svgMarkup);
+    }
+    if (!svgNode) return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "preview-draft";
+    wrapper.dataset.draftId = draft.id;
+    applyDraftColor(svgNode, draft.color, isActive);
+    wrapper.appendChild(svgNode);
+    preview.appendChild(wrapper);
+    if (isActive) {
+      currentSvg = svgNode;
+    }
+    visibleCount += 1;
+  });
+  if (!visibleCount) {
+    showPreviewMessage("Duplicate a draft to start comparing.");
+  }
+}
+
+function importSvgMarkup(markup) {
+  if (!markup) return null;
+  if (svgDomParser) {
+    const doc = svgDomParser.parseFromString(markup, "image/svg+xml");
+    const svg = doc.documentElement;
+    return document.importNode ? document.importNode(svg, true) : svg;
+  }
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = markup.trim();
+  return wrapper.firstElementChild;
+}
+
+function applyDraftColor(svgNode, color, emphasize = false) {
+  if (!svgNode) return;
+  const accent = color || "#2563eb";
+  const strokeColor = emphasize ? accent : mixColor(accent, "#ffffff", 0.2);
+  const fillColor = emphasize ? mixColor(accent, "#ffffff", 0.1) : mixColor(accent, "#ffffff", 0.45);
+  svgNode.style.opacity = emphasize ? 1 : 0.95;
+  const strokeTargets = svgNode.querySelectorAll("path,line,polyline,polygon,rect,circle,ellipse");
+  strokeTargets.forEach((node) => {
+    const stroke = node.getAttribute("stroke");
+    if (stroke && stroke.toLowerCase() !== "none") {
+      node.setAttribute("stroke", strokeColor);
+    }
+    const fill = node.getAttribute("fill");
+    if (fill && fill.toLowerCase() !== "none" && node.tagName !== "path") {
+      node.setAttribute("fill", fillColor);
+    }
+  });
+  svgNode.querySelectorAll("text").forEach((node) => {
+    const isMarker = isMarkerNumberText(node);
+    node.setAttribute("fill", isMarker ? "#ffffff" : strokeColor);
+  });
+}
+
+function isMarkerNumberText(node) {
+  if (!node) return false;
+  let current = node;
+  while (current && current !== current.ownerSVGElement) {
+    const layerName = current.getAttribute && current.getAttribute("data-layer");
+    if (layerName && /numbers|letters/i.test(layerName)) {
+      return true;
+    }
+    current = current.parentNode;
+  }
+  return false;
+}
+
+function mixColor(baseHex, mixHex, ratio = 0.5) {
+  const base = hexToRgb(baseHex);
+  const mix = hexToRgb(mixHex);
+  if (!base || !mix) return baseHex || "#94a3b8";
+  const r = Math.round(base.r * (1 - ratio) + mix.r * ratio);
+  const g = Math.round(base.g * (1 - ratio) + mix.g * ratio);
+  const b = Math.round(base.b * (1 - ratio) + mix.b * ratio);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function hexToRgb(hex) {
+  if (!hex) return null;
+  let normalized = hex.trim();
+  if (normalized.startsWith("#")) normalized = normalized.slice(1);
+  if (normalized.length === 3) {
+    normalized = normalized
+      .split("")
+      .map((c) => c + c)
+      .join("");
+  }
+  if (normalized.length !== 6) return null;
+  const num = parseInt(normalized, 16);
+  if (Number.isNaN(num)) return null;
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255,
+  };
+}
+
+function recolorSvgMarkup(markup, color) {
+  const svgNode = importSvgMarkup(markup);
+  if (!svgNode) return markup;
+  applyDraftColor(svgNode, color, false);
+  return svgSerializer.serializeToString(svgNode);
+}
+
+function getCurrentPatternKey() {
+  if (patternSelect && patternSelect.value) {
+    return patternSelect.value;
+  }
+  return activePatternKey || "armstrong";
+}
+
+function persistActiveDraftInputs(patternKey) {
+  const store = getDraftStore(patternKey);
+  if (!store || !store.activeId) return;
+  const activeDraft = getActiveDraft(patternKey);
+  if (!activeDraft) return;
+  activeDraft.inputState = captureInputState(patternKey);
+}
+
+function persistActiveDraftSvg() {
+  const patternKey = getCurrentPatternKey();
+  const activeDraft = getActiveDraft(patternKey);
+  if (!activeDraft || !currentSvg) return;
+  activeDraft.svgMarkup = svgSerializer.serializeToString(currentSvg);
+}
+
+function duplicateCurrentDraft(patternKey) {
+  ensureInitialDraft(patternKey);
+  const store = getDraftStore(patternKey);
+  const activeDraft = getActiveDraft(patternKey);
+  if (!store || !activeDraft) return;
+  persistActiveDraftInputs(patternKey);
+  const newDraft = createDraft(patternKey, activeDraft.inputState);
+  if (!newDraft) return;
+  newDraft.svgMarkup = recolorSvgMarkup(activeDraft.svgMarkup, newDraft.color);
+  store.drafts.push(newDraft);
+  store.activeId = newDraft.id;
+  applyActiveDraftInputs(patternKey);
+  renderDraftList(patternKey);
+  renderDraftPreviews(patternKey);
+  hydrateLayerTools(currentSvg);
+}
+
+function selectDraft(patternKey, draftId) {
+  const store = getDraftStore(patternKey);
+  if (!store || store.activeId === draftId) return;
+  persistActiveDraftInputs(patternKey);
+  store.activeId = draftId;
+  applyActiveDraftInputs(patternKey);
+  renderDraftList(patternKey);
+  regen();
+}
+
+function toggleDraftVisibility(patternKey, draftId) {
+  const store = getDraftStore(patternKey);
+  if (!store) return;
+  const draft = store.drafts.find((entry) => entry.id === draftId);
+  if (!draft) return;
+  if (draft.id === store.activeId && draft.visible) {
+    alert("Select another draft before hiding this one.");
+    return;
+  }
+  draft.visible = !draft.visible;
+  renderDraftList(patternKey);
+  renderDraftPreviews(patternKey);
+  hydrateLayerTools(currentSvg);
 }
 
 function ensurePatternSelection(patternKey) {
@@ -3391,6 +3778,7 @@ function initApp() {
   if (patternSelect && patternSelect.value !== initialPattern && PATTERN_CONFIGS[initialPattern]) {
     patternSelect.value = initialPattern;
   }
+  activePatternKey = patternSelect ? patternSelect.value || initialPattern : initialPattern;
   armstrongControls = document.getElementById("armstrongControls");
   patternPlaceholder = document.getElementById("patternPlaceholder");
   enhancePatternSelect();
@@ -3398,6 +3786,8 @@ function initApp() {
   enhanceFitProfileSelect();
   initAldrichAutoFields();
   initHofenbitzerControls();
+  initLayerTools();
+  initDraftManager();
   Object.entries(PATTERN_CONFIGS).forEach(([key, config]) => {
     if (!config) return;
     const downloadButton = config.downloadId ? document.getElementById(config.downloadId) : null;
@@ -3433,6 +3823,23 @@ function initApp() {
         }
       });
     }
+
+    const duplicateButton = config.duplicateId ? document.getElementById(config.duplicateId) : null;
+    if (duplicateButton) {
+      duplicateButton.addEventListener("click", () => {
+        ensurePatternSelection(key);
+        duplicateCurrentDraft(key);
+      });
+    }
+
+    const manageButton = config.layerButtonId ? document.getElementById(config.layerButtonId) : null;
+    if (manageButton) {
+      manageButton.addEventListener("click", () => {
+        ensurePatternSelection(key);
+        if (!currentSvg) regen();
+        openLayerModal();
+      });
+    }
   });
 
   document
@@ -3451,12 +3858,20 @@ function initApp() {
 
   if (patternSelect) {
     patternSelect.addEventListener("change", () => {
+      const nextPattern = patternSelect.value || "armstrong";
+      persistActiveDraftInputs(activePatternKey);
+      activePatternKey = nextPattern;
+      ensureInitialDraft(activePatternKey);
+      applyActiveDraftInputs(activePatternKey);
       updatePatternVisibility();
+      renderDraftList(activePatternKey);
       regen();
     });
   }
 
+  applyActiveDraftInputs(activePatternKey);
   updatePatternVisibility();
+  renderDraftList(activePatternKey);
   regen();
 }
 
@@ -3747,6 +4162,282 @@ function updatePatternVisibility() {
   }
 }
 
+function initLayerTools() {
+  if (layerManager.list || typeof document === "undefined") return;
+  layerManager.overlay = document.getElementById("layerToolsModal");
+  layerManager.list = document.getElementById("layerList");
+  layerManager.closeButton = document.getElementById("closeLayerModal");
+  const exportButton = document.getElementById("exportVisibleLayers");
+  if (exportButton) {
+    exportButton.addEventListener("click", exportVisibleLayers);
+  }
+  if (layerManager.closeButton) {
+    layerManager.closeButton.addEventListener("click", closeLayerModal);
+  }
+  if (layerManager.overlay) {
+    layerManager.overlay.addEventListener("click", (event) => {
+      if (event.target === layerManager.overlay) {
+        closeLayerModal();
+      }
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && layerManager.isOpen) {
+      closeLayerModal();
+    }
+  });
+  hydrateLayerTools(null);
+}
+
+function openLayerModal() {
+  if (!layerManager.overlay) return;
+  hydrateLayerTools(currentSvg);
+  layerManager.overlay.hidden = false;
+  layerManager.overlay.setAttribute("aria-hidden", "false");
+  layerManager.isOpen = true;
+}
+
+function closeLayerModal() {
+  if (!layerManager.overlay) return;
+  layerManager.overlay.hidden = true;
+  layerManager.overlay.setAttribute("aria-hidden", "true");
+  layerManager.isOpen = false;
+}
+
+function hydrateLayerTools(svg) {
+  if (!layerManager.list) return;
+  layerManager.layers = [];
+  layerManager.list.innerHTML = "";
+  if (!svg) {
+    layerManager.list.appendChild(renderLayerEmptyState("Generate a draft to manage layers."));
+    return;
+  }
+  const nodes = Array.from(svg.querySelectorAll('g[inkscape\\:groupmode="layer"]'));
+  if (!nodes.length) {
+    layerManager.list.appendChild(renderLayerEmptyState("No SVG layers found for this draft."));
+    return;
+  }
+  nodes.forEach((node) => {
+    const entry = buildLayerEntry(node);
+    if (!entry) return;
+    layerManager.layers.push(entry);
+    layerManager.list.appendChild(buildLayerListItem(entry));
+  });
+}
+
+function renderLayerEmptyState(message) {
+  const empty = document.createElement("p");
+  empty.className = "layer-list__empty";
+  empty.textContent = message;
+  return empty;
+}
+
+function buildLayerEntry(node) {
+  if (!node) return null;
+  if (!node.id) {
+    const slugBase = slugifyId(node.getAttribute("data-layer") || "layer");
+    let attempt = slugBase;
+    let index = 1;
+    const hostSvg = node.ownerSVGElement || node;
+    while (layerIdExists(hostSvg, attempt)) {
+      attempt = `${slugBase}-${index++}`;
+    }
+    node.setAttribute("id", attempt);
+  }
+  const id = node.id;
+  const baseId = node.dataset.baseLayerId || id;
+  const copyIndex = parseInt(node.dataset.copyIndex || "", 10);
+  const label =
+    node.getAttribute("inkscape:label") || node.getAttribute("data-layer") || id || "Layer";
+  const visible = isLayerNodeVisible(node);
+  const locked =
+    node.getAttribute("display") === "none" && node.getAttribute("data-layer-user-hidden") !== "true";
+  return {
+    id,
+    baseId,
+    name: label,
+    element: node,
+    visible: locked ? false : visible,
+    locked,
+    isCopy:
+      node.dataset.isDuplicate === "true" ||
+      (Number.isFinite(copyIndex) && copyIndex > 0),
+    copyIndex: Number.isFinite(copyIndex) ? copyIndex : null,
+  };
+}
+
+function buildLayerListItem(entry) {
+  const row = document.createElement("div");
+  row.className = "layer-list__item";
+  if (entry.locked) {
+    row.classList.add("is-disabled");
+    row.title = "Enable this layer using the pattern toggles.";
+  }
+  const toggleLabel = document.createElement("label");
+  toggleLabel.className = "layer-list__toggle";
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = !entry.locked && entry.visible;
+  checkbox.disabled = entry.locked;
+  checkbox.addEventListener("change", () => setLayerVisibility(entry.id, checkbox.checked));
+  const name = document.createElement("span");
+  name.textContent =
+    entry.isCopy && entry.copyIndex ? `${entry.name} (Copy ${entry.copyIndex})` : entry.name;
+  toggleLabel.appendChild(checkbox);
+  toggleLabel.appendChild(name);
+  row.appendChild(toggleLabel);
+
+  const actions = document.createElement("div");
+  actions.className = "layer-list__actions";
+  const duplicateBtn = document.createElement("button");
+  duplicateBtn.type = "button";
+  duplicateBtn.className = "layer-list__button";
+  duplicateBtn.textContent = "Duplicate";
+  duplicateBtn.addEventListener("click", () => duplicateLayer(entry.id));
+  actions.appendChild(duplicateBtn);
+  row.appendChild(actions);
+  return row;
+}
+
+function setLayerVisibility(layerId, visible) {
+  const entry = layerManager.layers.find((layer) => layer.id === layerId);
+  if (!entry || entry.locked) return;
+  entry.visible = visible;
+  setLayerUserHidden(entry.element, !visible);
+  persistActiveDraftSvg();
+}
+
+function setLayerUserHidden(node, hidden) {
+  if (!node) return;
+  if (hidden) {
+    node.setAttribute("data-layer-user-hidden", "true");
+  } else {
+    node.removeAttribute("data-layer-user-hidden");
+  }
+}
+
+function isLayerNodeVisible(node) {
+  if (!node) return false;
+  if (node.getAttribute("data-layer-user-hidden") === "true") return false;
+  const styleDisplay = node.style?.display;
+  if (styleDisplay && styleDisplay.toLowerCase() === "none") return false;
+  const attrDisplay = node.getAttribute("display");
+  if (attrDisplay && attrDisplay.toLowerCase() === "none") return false;
+  return true;
+}
+
+function getExistingCopyCount(baseId) {
+  return layerManager.layers.filter((layer) => layer.baseId === baseId && layer.isCopy).length;
+}
+
+function generateCopyId(baseId, index) {
+  return `${baseId}-copy${index}`;
+}
+
+function findLastLayerElement(baseId) {
+  const related = layerManager.layers.filter((layer) => layer.baseId === baseId);
+  if (!related.length) return null;
+  return related[related.length - 1].element;
+}
+
+function pickDuplicateColor(index) {
+  if (!DUPLICATE_COLOR_PALETTE.length) return null;
+  const pos = Math.max(0, (index - 1) % DUPLICATE_COLOR_PALETTE.length);
+  return DUPLICATE_COLOR_PALETTE[pos];
+}
+
+function recolorLayer(group, color) {
+  if (!group || !color) return;
+  group.querySelectorAll("path,line,polyline,polygon,rect,circle,ellipse").forEach((node) => {
+    const stroke = node.getAttribute("stroke");
+    if (stroke && stroke.toLowerCase() !== "none") {
+      node.setAttribute("stroke", color);
+    }
+  });
+  group.querySelectorAll("text").forEach((node) => {
+    const fill = node.getAttribute("fill");
+    if (!fill || fill.toLowerCase() !== "none") {
+      node.setAttribute("fill", color);
+    }
+  });
+}
+
+function escapeCssId(id) {
+  if (typeof CSS !== "undefined" && CSS.escape) {
+    return CSS.escape(id);
+  }
+  return id.replace(/([ #.;?%&,\+\*\~\':"!^$[\]()=>|/@])/g, "\\$1");
+}
+
+function layerIdExists(svgRoot, id) {
+  if (!svgRoot || !id) return false;
+  const selector = `#${escapeCssId(id)}`;
+  return Boolean(svgRoot.querySelector(selector));
+}
+
+function duplicateLayer(layerId) {
+  if (!currentSvg) return;
+  const entry = layerManager.layers.find((layer) => layer.id === layerId);
+  if (!entry || !entry.element || !entry.element.parentNode) return;
+  const baseId = entry.baseId || entry.id;
+  const existingCopies = getExistingCopyCount(baseId);
+  if (existingCopies >= 15) {
+    alert("You can only create up to 15 copies of this layer.");
+    return;
+  }
+  const parentNode = entry.element.parentNode;
+  let copyIndex = existingCopies + 1;
+  let copyId = generateCopyId(baseId, copyIndex);
+  while (layerIdExists(currentSvg, copyId)) {
+    copyIndex += 1;
+    copyId = generateCopyId(baseId, copyIndex);
+  }
+  const clone = entry.element.cloneNode(true);
+  clone.setAttribute("id", copyId);
+  clone.dataset.baseLayerId = baseId;
+  clone.dataset.copyIndex = String(copyIndex);
+  clone.dataset.isDuplicate = "true";
+  clone.removeAttribute("data-layer-user-hidden");
+  clone.setAttribute("inkscape:label", `${entry.name} Copy ${copyIndex}`);
+  const lastBase = findLastLayerElement(baseId) || entry.element;
+  if (lastBase && lastBase.nextSibling) {
+    parentNode.insertBefore(clone, lastBase.nextSibling);
+  } else {
+    parentNode.appendChild(clone);
+  }
+  recolorLayer(clone, pickDuplicateColor(copyIndex));
+  hydrateLayerTools(currentSvg);
+  persistActiveDraftSvg();
+}
+
+function exportVisibleLayers() {
+  if (!currentSvg) {
+    alert("Generate a draft before exporting layers.");
+    return;
+  }
+  const exportSvg = currentSvg.cloneNode(true);
+  const exportLayers = Array.from(exportSvg.querySelectorAll('g[inkscape\\:groupmode="layer"]'));
+  let kept = 0;
+  exportLayers.forEach((node) => {
+    if (node.getAttribute("data-layer-user-hidden") === "true") {
+      node.remove();
+      return;
+    }
+    const attrDisplay = node.getAttribute("display");
+    if (attrDisplay && attrDisplay.toLowerCase() === "none") {
+      node.remove();
+      return;
+    }
+    kept += 1;
+    node.removeAttribute("data-layer-user-hidden");
+  });
+  if (!kept) {
+    alert("No visible layers to export.");
+    return;
+  }
+  downloadSVG(exportSvg, "pattern-export.svg");
+}
+
 function resolveBustCupOffset(cup) {
   if (!cup) return BUST_CUP_OFFSETS.B;
   let normalized = String(cup).toUpperCase();
@@ -3808,10 +4499,9 @@ function applyLayerVisibility(layers, params) {
 function showPreviewMessage(text) {
   if (!preview) return;
   const msg = document.createElement("p");
+  msg.className = "preview-message";
   msg.textContent = text;
-  msg.style.color = "#475569";
-  msg.style.fontStyle = "italic";
-  msg.style.margin = "24px";
+  preview.innerHTML = "";
   preview.appendChild(msg);
 }
 

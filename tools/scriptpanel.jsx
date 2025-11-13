@@ -1,19 +1,26 @@
 //@target illustrator
+//@targetengine ScriptLauncherEngine
 
 (function () {
     'use strict';
 
+    if ($.global.ScriptLauncherUI && $.global.ScriptLauncherUI.window) {
+        try {
+            $.global.ScriptLauncherUI.window.close();
+        } catch (cleanupErr) {}
+    }
+
     // === EDIT ME: Scripts to display =====================================
     // Provide friendly names, paths, and colors (RGB 0-1). Paths can be:
-    //  - Relative (e.g. 'MiniScripts/true_darts.jsx') resolved next to this panel
+    //  - Relative (e.g. 'MiniScripts/true_darts.jsx') resolved next to this panel's parent folder
     //  - Absolute (e.g. 'D:/Scripts/foo.jsx')
     var SCRIPTS = [
-        { name: "True Dart", path: "../MiniScripts/true_darts.jsx", color: [0.62, 0.35, 0.71], text: [1, 1, 1] },
-        { name: "Equal Paths", path: "../MiniScripts/make_paths_equal.jsx", color: [0.32, 0.51, 0.78], text: [1, 1, 1] },
-        { name: "Add Midpoint", path: "../MiniScripts/add_midpoint.jsx", color: [0.85, 0.33, 0.19], text: [1, 1, 1] },
-        { name: "Create Dart", path: "../MiniScripts/create_dart.jsx", color: [0.20, 0.6, 0.45], text: [1, 1, 1] },
-        { name: "Draw & Label", path: "../MiniScripts/draw_and_label.jsx", color: [0.50, 0.35, 0.85], text: [1, 1, 1] },
-        { name: "Mark", path: "../MiniScripts/mark_along_path.jsx", color: [0.95, 0.55, 0.15], text: [0.1, 0.1, 0.1] }
+        { name: "True Darts", path: "MiniScripts/true_darts.jsx", color: [0.62, 0.35, 0.71], text: [1, 1, 1] },
+        { name: "Equal Paths", path: "MiniScripts/make_paths_equal.jsx", color: [0.32, 0.51, 0.78], text: [1, 1, 1] },
+        { name: "Add Midpoint", path: "MiniScripts/add_midpoint.jsx", color: [0.85, 0.33, 0.19], text: [1, 1, 1] },
+        { name: "Create Dart", path: "MiniScripts/create_dart.jsx", color: [0.20, 0.6, 0.45], text: [1, 1, 1] },
+        { name: "Draw & Label", path: "MiniScripts/draw_and_label.jsx", color: [0.50, 0.35, 0.85], text: [1, 1, 1] },
+        { name: "Mark", path: "MiniScripts/mark_along_path.jsx", color: [0.95, 0.55, 0.15], text: [0.1, 0.1, 0.1] }
     ];
     // =====================================================================
 
@@ -29,6 +36,7 @@
     // === Constants & shared state ========================================
     var PANEL_FILE = File($.fileName);
     var PANEL_DIR = PANEL_FILE.parent;
+    var SCRIPT_ROOT = PANEL_DIR && PANEL_DIR.parent ? PANEL_DIR.parent : PANEL_DIR;
     var GRID_MARGIN = 14;
     var GRID_SPACING = 8;
     var TEXT_PADDING_H = 14;
@@ -63,12 +71,16 @@
     state.font = getFont('Segoe UI', 'bold', 11);
     state.smallFont = getFont('Segoe UI', 'regular', 10);
 
+    $.global.ScriptLauncherUI = $.global.ScriptLauncherUI || {};
+    $.global.ScriptLauncherUI.state = state;
+
     main();
 
     // === Entry point =====================================================
     function main() {
         try {
             hydrateEntries();
+            warnMissingScripts();
             buildUI();
             buildGrid();
             if (state.window && state.window.layout) {
@@ -104,10 +116,29 @@
         }
     }
 
+    function warnMissingScripts() {
+        if (!state.entries || !state.entries.length) {
+            alert('No scripts were configured. Make sure the MiniScripts folder sits next to the tools folder.');
+            return;
+        }
+        var missing = [];
+        for (var i = 0; i < state.entries.length; i++) {
+            if (!state.entries[i].exists) {
+                missing.push(state.entries[i].absolutePath || state.entries[i].path);
+            }
+        }
+        if (!missing.length) {
+            return;
+        }
+        var message = 'Some scripts were not found:\n\n' + missing.join('\n') + '\n\nCheck that the MiniScripts folder is next to the tools folder. The panel will still open for the scripts that were found.';
+        alert(message);
+    }
+
     // === UI construction =================================================
     function buildUI() {
         var win = new Window('palette', 'My Script Panel', undefined, { resizeable: true });
         state.window = win;
+        $.global.ScriptLauncherUI.window = win;
         win.orientation = 'column';
         win.alignChildren = ['fill', 'fill'];
         win.spacing = 10;
@@ -444,11 +475,31 @@
         if (isAbsolutePath(cleaned)) {
             return new File(cleaned);
         }
-        var basePath = PANEL_DIR ? PANEL_DIR.fsName.replace(/\\/g, '/') : '';
-        if (basePath && basePath.charAt(basePath.length - 1) !== '/') {
-            basePath += '/';
+        var roots = [];
+        if (SCRIPT_ROOT) {
+            roots.push(SCRIPT_ROOT);
         }
-        return new File(basePath + cleaned);
+        if (PANEL_DIR && (!SCRIPT_ROOT || SCRIPT_ROOT.fsName !== PANEL_DIR.fsName)) {
+            roots.push(PANEL_DIR);
+        }
+        for (var i = 0; i < roots.length; i++) {
+            var basePath = roots[i].fsName.replace(/\\/g, '/');
+            if (basePath && basePath.charAt(basePath.length - 1) !== '/') {
+                basePath += '/';
+            }
+            var candidate = new File(basePath + cleaned);
+            if (candidate.exists) {
+                return candidate;
+            }
+        }
+        if (roots.length) {
+            var fallbackPath = roots[0].fsName.replace(/\\/g, '/');
+            if (fallbackPath && fallbackPath.charAt(fallbackPath.length - 1) !== '/') {
+                fallbackPath += '/';
+            }
+            return new File(fallbackPath + cleaned);
+        }
+        return new File(cleaned);
     }
 
     function isAbsolutePath(path) {

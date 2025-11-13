@@ -117,6 +117,8 @@
         </div>
 
         <div class="actions secondary">
+          <button id="duplicateDraftArmstrong" type="button" class="link-button secondary">Duplicate Draft</button>
+          <button id="manageLayersArmstrong" type="button" class="link-button secondary">Manage Layers</button>
           <button id="share" type="button" class="link-button">Share Link</button>
           <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
         </div>
@@ -125,6 +127,16 @@
           <label><input id="showGuides" type="checkbox" checked>Show Construction Lines</label>
           <label><input id="showMarkers" type="checkbox" checked>Show Markers and Numbers</label>
         </div>
+
+        <section class="draft-panel" id="draftPanelArmstrong" aria-label="Saved drafts">
+          <header class="draft-panel__header">
+            <h3>Draft Versions</h3>
+            <p>Duplicate to compare variations side-by-side.</p>
+          </header>
+          <div id="draftListArmstrong" class="draft-panel__list">
+            <p class="draft-panel__empty">No duplicates yet.</p>
+          </div>
+        </section>
       </div>
 
       <div id="aldrichControls" class="pattern-section" hidden>
@@ -205,6 +217,8 @@
         </div>
 
         <div class="actions secondary">
+          <button id="duplicateDraftAldrich" type="button" class="link-button secondary">Duplicate Draft</button>
+          <button id="manageLayersAldrich" type="button" class="link-button secondary">Manage Layers</button>
           <button id="shareAldrich" type="button" class="link-button">Share Link</button>
           <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
         </div>
@@ -213,6 +227,16 @@
           <label><input id="aldrichShowGuides" type="checkbox" checked>Show Construction Lines</label>
           <label><input id="aldrichShowMarkers" type="checkbox" checked>Show Markers and Numbers</label>
         </div>
+
+        <section class="draft-panel" id="draftPanelAldrich" aria-label="Saved drafts">
+          <header class="draft-panel__header">
+            <h3>Draft Versions</h3>
+            <p>Duplicate to compare variations side-by-side.</p>
+          </header>
+          <div id="draftListAldrich" class="draft-panel__list">
+            <p class="draft-panel__empty">No duplicates yet.</p>
+          </div>
+        </section>
       </div>
 
       <div id="hofenbitzerControls" class="pattern-section" hidden>
@@ -252,9 +276,21 @@
         </div>
 
         <div class="actions secondary">
+          <button id="duplicateDraftHofenbitzer" type="button" class="link-button secondary">Duplicate Draft</button>
+          <button id="manageLayersHofenbitzer" type="button" class="link-button secondary">Manage Layers</button>
           <button id="shareHofenbitzer" type="button" class="link-button">Share Link</button>
           <a class="link-button secondary" href="mailto:morethanpatterns@yahoo.com?subject=PatternKit%20Feedback" rel="noopener">Feedback</a>
         </div>
+
+        <section class="draft-panel" id="draftPanelHofenbitzer" aria-label="Saved drafts">
+          <header class="draft-panel__header">
+            <h3>Draft Versions</h3>
+            <p>Duplicate to compare variations side-by-side.</p>
+          </header>
+          <div id="draftListHofenbitzer" class="draft-panel__list">
+            <p class="draft-panel__empty">No duplicates yet.</p>
+          </div>
+        </section>
       </div>
 
       <div id="patternPlaceholder" class="pattern-placeholder" hidden>
@@ -265,8 +301,21 @@
       <div id="preview"></div>
     </section>
   </main>
+  <div id="layerToolsModal" class="layer-modal" hidden aria-hidden="true">
+    <div class="layer-modal__panel" role="dialog" aria-labelledby="layerModalTitle">
+      <header class="layer-modal__header">
+        <h2 id="layerModalTitle">Layers</h2>
+        <button id="closeLayerModal" type="button" class="layer-modal__close" aria-label="Close layer manager">&times;</button>
+      </header>
+      <p class="layer-modal__hint">Toggle visibility or create duplicates before exporting.</p>
+      <div id="layerList" class="layer-list">
+        <p class="layer-list__empty">Generate a draft to manage layers.</p>
+      </div>
+      <footer class="layer-modal__footer">
+        <button id="exportVisibleLayers" type="button">Export Visible SVG</button>
+      </footer>
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>
-
-
