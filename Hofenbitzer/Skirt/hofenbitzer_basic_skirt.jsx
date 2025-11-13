@@ -685,7 +685,7 @@
     }
 
     if (P1 && P13TopLeft) {
-        var frontCurveStartHandle = [P1[0] + cm(10.6), P1[1]];
+        var frontCurveStartHandle = [P1[0] + cm(10.6), P1[1] + cm(0.3)];
         var frontCurveEndHandle = [P13TopLeft[0] - cm(0.54), P13TopLeft[1]];
         var cfFrontDartCurve = drawCurveWithHandle(layers.shapingLayer, [P1[0], P1[1]], [P13TopLeft[0], P13TopLeft[1]], null, {
             startHandle: frontCurveStartHandle,
@@ -722,6 +722,23 @@
                 endHandle: backCfHandle
             });
             try { backWaistCF.name = 'Back Waist CF Curve'; } catch (eBackWaistCF) {}
+        }
+    } else {
+        if (P12 && P15Left) {
+            var backCurveStartHandle2 = [P12[0] + cm(0.4), P12[1] - cm(0.4)];
+            var backCurveEndHandle2 = [P15Left[0] - cm(0.6), P15Left[1]];
+            var backWaistCurve2 = drawCurveWithHandle(layers.shapingLayer, [P12[0], P12[1]], [P15Left[0], P15Left[1]], null, {
+                startHandle: backCurveStartHandle2,
+                endHandle: backCurveEndHandle2
+            });
+            try { backWaistCurve2.name = 'Back Waist Curve'; } catch (eBackWaistCurve2) {}
+        }
+        if (P15Right && P14UpperLeft) {
+            var backWaistTransition = drawCurveWithHandle(layers.shapingLayer, [P15Right[0], P15Right[1]], [P14UpperLeft[0], P14UpperLeft[1]], null, {
+                startHandle: [P15Right[0] + cm(0.6), P15Right[1]],
+                endHandle: [P14UpperLeft[0] - cm(2.4), P14UpperLeft[1]]
+            });
+            try { backWaistTransition.name = 'Back Waist Transition'; } catch (eBackTransition) {}
         }
     }
 
