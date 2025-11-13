@@ -581,7 +581,9 @@
     var P15TopOffset = null;
     var P15TopY = null;
     if (hasSecondBackDart) {
-        P15 = lerpPoint(P14Left, backHipWaistPoint, 0.5);
+        var hipCurveWaistPoint = backHipWaistPoint;
+        var firstBackDartLeft = P14UpperLeft || P14Left;
+        P15 = lerpPoint(firstBackDartLeft, hipCurveWaistPoint, 0.5);
         P15Base = [P15[0], P15[1] - backDartLength2Pt];
         var secondDashHalf = cm(2.5);
         P15TopOffset = cm((params.HipProfile === 'Curvy') ? 0.5 : 0.3);
