@@ -41,6 +41,18 @@
     var shouldShowMeasurementPalette = false;
 
     var DART_KEYS = ['SideDart','FrontDart','BackDart1','BackDart2'];
+    var PATTERN_EXCLUDE_NAMES = {
+        'Waist Line': true,
+        'Front Dart Centre': true,
+        'Front Dart Guide': true,
+        'Upper Waist Shaping Guide': true,
+        'Side Dart Left': true,
+        'Side Dart Right': true,
+        'Back Waist Raise': true,
+        '1st Back Dart Centre': true,
+        'Waist Shaping Guide': true,
+        'Back Dart Guide': true
+    };
 
     var CM_TO_PT = 28.346456692913385;
     function cm(v) { return v * CM_TO_PT; }
@@ -194,11 +206,16 @@
     }
 
     function duplicateToPattern(item) {
-        if (!item || !layers.pattern) return;
+        if (!item || !layers.pattern) return null;
+        var itemName = '';
+        try { itemName = item.name || ''; } catch (eItemName) {}
+        if (itemName && PATTERN_EXCLUDE_NAMES[itemName]) return null;
         ensureLayerWritable(layers.pattern);
         try {
-            item.duplicate(layers.pattern, ElementPlacement.PLACEATEND);
-        } catch (eDup) {}
+            return item.duplicate(layers.pattern, ElementPlacement.PLACEATEND);
+        } catch (eDup) {
+            return null;
+        }
     }
 
     function buildPaletteStaticText(group, label, width, justification) {
@@ -656,18 +673,42 @@
     var line78 = drawLine(layers.basicFrame, P7[0], P7[1], P8[0], P8[1], null, []);
     try { line78.name = 'Side Line'; } catch (eMidName) {}
     addParallelLineLabel('Side Line', P7, P8, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
-    duplicateToPattern(line78);
+    // Do not duplicate the full side line into the pattern; it will be built from curve pieces.
 
     // Hip depth guide (3 horizontally across to meet 4-5 line) dashed
     var line36 = drawLine(layers.basicFrame, P3[0], P3[1], P6[0], P6[1], null, DASH_PT);
     try { line36.name = 'Hip Line'; } catch (eHipName) {}
     addParallelLineLabel('Hip Line', P3, P6, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
-    duplicateToPattern(line36);
+
+    // Side Line segment (hip to hem) on pattern layer
+    var patternSideSegment = null;
+    var patternHipLine = null;
+    if (layers.pattern) {
+        ensureLayerWritable(layers.pattern);
+        patternSideSegment = layers.pattern.pathItems.add();
+        patternSideSegment.stroked = true;
+        patternSideSegment.strokeWidth = STROKE_PT;
+        patternSideSegment.strokeColor = COL_BLACK;
+        patternSideSegment.filled = false;
+        patternSideSegment.closed = false;
+        var hipToHem = [[P9[0], P9[1]], [P8[0], P8[1]]];
+        patternSideSegment.setEntirePath(hipToHem);
+        try { patternSideSegment.name = 'Side Line'; } catch (eSideSeg) {}
+
+        patternHipLine = layers.pattern.pathItems.add();
+        patternHipLine.stroked = true;
+        patternHipLine.strokeWidth = STROKE_PT;
+        patternHipLine.strokeColor = COL_BLACK;
+        patternHipLine.strokeDashes = DASH_PT.slice();
+        patternHipLine.filled = false;
+        patternHipLine.closed = false;
+        patternHipLine.setEntirePath([[P3[0], P3[1]], [P6[0], P6[1]]]);
+        try { patternHipLine.name = 'Hip Line'; } catch (eHipPat) {}
+    }
 
     // Extended top from 7 upwards to point 10
     var line710 = drawLine(layers.basicFrame, P7[0], P7[1], P10[0], P10[1], null, []);
     try { line710.name = 'Waist Shaping Guide'; } catch (eShapeName) {}
-    duplicateToPattern(line710);
 
     // Side dart halves from 10
     if (halfSideDartPt > 0) {
