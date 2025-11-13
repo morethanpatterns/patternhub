@@ -461,6 +461,17 @@
         return path;
     }
 
+    function addHelperAnchor(layer, point, name) {
+        if (!layer || !point) return null;
+        ensureLayerWritable(layer);
+        var size = cm(0.05);
+        var rect = layer.pathItems.rectangle(point[1] + size / 2, point[0] - size / 2, size, size);
+        rect.stroked = false;
+        rect.filled = false;
+        try { rect.name = name; } catch (eName) {}
+        return rect;
+    }
+
     function placeMarker(x, y, number) {
         if (!layers.markers || !layers.numbers) return null;
         ensureLayerWritable(layers.markers);
@@ -506,6 +517,15 @@
         if (Math.abs(dy) < 0.0001) return [pA[0], targetY];
         var t = (targetY - pA[1]) / dy;
         return [pA[0] + (pB[0] - pA[0]) * t, targetY];
+    }
+
+    function roundPoint(pt, decimals) {
+        if (!pt) return pt;
+        var factor = Math.pow(10, decimals || 0);
+        return [
+            Math.round(pt[0] * factor) / factor,
+            Math.round(pt[1] * factor) / factor
+        ];
     }
 
     var L_mol = cm(params.MoL);
@@ -569,6 +589,8 @@
         singleBackDashRight = [P14[0] + singleDashHalf, singleGuideY];
         P14UpperLeft = [P14[0] - halfBackDart1Pt, singleGuideY];
         P14UpperRight = [P14[0] + halfBackDart1Pt, singleGuideY];
+        var singleBackWaistRaise = drawLine(layers.dartsLayer, P14UpperLeft[0], singleGuideY, P14UpperRight[0], singleGuideY, null, []);
+        try { singleBackWaistRaise.name = 'Back Waist Raise'; } catch (eSingleRaise) {}
     }
     var halfBackDart2Pt = cm(rawBackDart2 / 2);
     var backDartLength2Pt = cm(Math.max(0, params.BackDartLength2 || 0));
@@ -581,9 +603,13 @@
     var P15TopOffset = null;
     var P15TopY = null;
     if (hasSecondBackDart) {
-        var hipCurveWaistPoint = backHipWaistPoint;
+        var hipCurveWaistPoint = P12 ? [P12[0], P12[1]] : backHipWaistPoint;
         var firstBackDartLeft = P14UpperLeft || P14Left;
-        P15 = lerpPoint(firstBackDartLeft, hipCurveWaistPoint, 0.5);
+        var hipCurveWaistPointRounded = roundPoint(hipCurveWaistPoint, 2);
+        var firstBackDartLeftRounded = roundPoint(firstBackDartLeft, 2);
+        var waistYRounded = Math.round(waistY * 100) / 100;
+        var midX = (firstBackDartLeftRounded[0] + hipCurveWaistPointRounded[0]) / 2;
+        P15 = [midX, waistYRounded];
         P15Base = [P15[0], P15[1] - backDartLength2Pt];
         var secondDashHalf = cm(2.5);
         P15TopOffset = cm((params.HipProfile === 'Curvy') ? 0.5 : 0.3);
@@ -592,6 +618,10 @@
         P15dashRight = [P15[0] + secondDashHalf, P15TopY];
         P15Left = [P15[0] - halfBackDart2Pt, P15TopY];
         P15Right = [P15[0] + halfBackDart2Pt, P15TopY];
+        addHelperAnchor(layers.shapingLayer, hipCurveWaistPointRounded, 'Hip Curve Waist Reference');
+        addHelperAnchor(layers.shapingLayer, firstBackDartLeftRounded, 'First Back Dart Left Reference');
+        var backWaistRaise = drawLine(layers.dartsLayer, P15Left[0], P15TopY, P15Right[0], P15TopY, null, []);
+        try { backWaistRaise.name = 'Back Waist Raise'; } catch (eBackRaise) {}
     }
 
     // CF line (1 to 2)
