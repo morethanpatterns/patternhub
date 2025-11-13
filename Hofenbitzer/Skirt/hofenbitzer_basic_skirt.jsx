@@ -653,13 +653,44 @@
     }
 
     if (P1 && P13TopLeft) {
-        var frontCurveStartHandle = [P1[0] + cm(13.6), P1[1]];
+        var frontCurveStartHandle = [P1[0] + cm(10.6), P1[1]];
         var frontCurveEndHandle = [P13TopLeft[0] - cm(0.54), P13TopLeft[1]];
         var cfFrontDartCurve = drawCurveWithHandle(layers.shapingLayer, [P1[0], P1[1]], [P13TopLeft[0], P13TopLeft[1]], null, {
             startHandle: frontCurveStartHandle,
             endHandle: frontCurveEndHandle
         });
         try { cfFrontDartCurve.name = 'Front Waist Curve'; } catch (eFrontWaistCurve) {}
+    }
+
+    if (P13TopRight && P11) {
+        var frontHipHandle = [P11[0] - cm(0.6), P11[1] - cm(0.5)];
+        var dartRightHandle = [P13TopRight[0], P13TopRight[1]];
+        var frontHipTransition = drawCurveWithHandle(layers.shapingLayer, [P13TopRight[0], P13TopRight[1]], [P11[0], P11[1]], null, {
+            startHandle: dartRightHandle,
+            endHandle: frontHipHandle
+        });
+        try { frontHipTransition.name = 'Front Hip Transition'; } catch (eFrontHipTransition) {}
+    }
+
+    if (!hasSecondBackDart) {
+        if (P12 && P14UpperLeft) {
+            var backCurveStartHandle = [P12[0] + cm(0.4), P12[1] - cm(0.4)];
+            var backCurveEndHandle = [P14UpperLeft[0] - cm(2.95), P14UpperLeft[1]];
+            var backWaistCurve = drawCurveWithHandle(layers.shapingLayer, [P12[0], P12[1]], [P14UpperLeft[0], P14UpperLeft[1]], null, {
+                startHandle: backCurveStartHandle,
+                endHandle: backCurveEndHandle
+            });
+            try { backWaistCurve.name = 'Back Waist Curve'; } catch (eBackWaistCurve) {}
+        }
+        if (P14UpperRight && P4) {
+            var backRightHandle = [P14UpperRight[0] + cm(0.1), P14UpperRight[1] - cm(0.15)];
+            var backCfHandle = [P4[0] - cm(4.25), P4[1]];
+            var backWaistCF = drawCurveWithHandle(layers.shapingLayer, [P14UpperRight[0], P14UpperRight[1]], [P4[0], P4[1]], null, {
+                startHandle: backRightHandle,
+                endHandle: backCfHandle
+            });
+            try { backWaistCF.name = 'Back Waist CF Curve'; } catch (eBackWaistCF) {}
+        }
     }
 
     if (singleBackDashLeft && singleBackDashRight) {
