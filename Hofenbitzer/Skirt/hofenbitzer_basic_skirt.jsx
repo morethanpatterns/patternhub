@@ -811,6 +811,17 @@
             try { backWaistTransition.name = 'Back Waist Transition'; } catch (eBackTransition) {}
             duplicateToPattern(backWaistTransition);
         }
+        if (layers.pattern && P4 && P14UpperRight) {
+            ensureLayerWritable(layers.pattern);
+            var backWaistCFPattern = layers.pattern.pathItems.add();
+            backWaistCFPattern.stroked = true;
+            backWaistCFPattern.strokeWidth = STROKE_PT;
+            backWaistCFPattern.strokeColor = COL_BLACK;
+            backWaistCFPattern.filled = false;
+            backWaistCFPattern.closed = false;
+            backWaistCFPattern.setEntirePath([[P4[0], P4[1]], [P14UpperRight[0], P14UpperRight[1]]]);
+            try { backWaistCFPattern.name = 'Back Waist CF Segment'; } catch (eBackCfSeg) {}
+        }
     }
 
     if (singleBackDashLeft && singleBackDashRight) {
@@ -839,7 +850,6 @@
     if (hasSecondBackDart && backDartLength2Pt > 0 && P15 && P15Base) {
         var line15Down = drawLine(layers.dartsLayer, P15[0], P15[1], P15Base[0], P15Base[1], null, DASH_PT);
         try { line15Down.name = '2nd Back Dart Centre'; } catch (eBackCenter2) {}
-        duplicateToPattern(line15Down);
     }
     if (hasSecondBackDart && halfBackDart2Pt > 0 && P15Left && P15Right && P15Base) {
         var line15Left = drawLine(layers.dartsLayer, P15Left[0], P15Left[1], P15Base[0], P15Base[1], null, []);
