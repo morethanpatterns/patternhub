@@ -176,9 +176,8 @@
         var stack = {};
         stack.basicFrame = resetLayer("Basic Frame", COL_BLACK);
         stack.labelsParent = resetLayer("Labels, Markers & Numbers", COL_BLACK);
-        stack.frontConstruction = resetLayer("Front Construction", COL_BLACK);
-        stack.backConstruction = resetLayer("Back Construction", COL_BLACK);
         stack.dartsShaping = resetLayer("Darts & Shaping", COL_BLACK);
+        stack.pattern = resetLayer("Skirt Pattern", COL_BLACK);
 
         stack.labels = stack.labelsParent.layers.add();
         stack.labels.name = "Labels";
@@ -192,6 +191,14 @@
         stack.shapingLayer = stack.dartsShaping.layers.add();
         stack.shapingLayer.name = "Shaping";
         return stack;
+    }
+
+    function duplicateToPattern(item) {
+        if (!item || !layers.pattern) return;
+        ensureLayerWritable(layers.pattern);
+        try {
+            item.duplicate(layers.pattern, ElementPlacement.PLACEATEND);
+        } catch (eDup) {}
     }
 
     function buildPaletteStaticText(group, label, width, justification) {
@@ -344,9 +351,8 @@
     purgeExtraLayers({
         "Basic Frame": true,
         "Labels, Markers & Numbers": true,
-        "Front Construction": true,
-        "Back Construction": true,
-        "Darts & Shaping": true
+        "Darts & Shaping": true,
+        "Skirt Pattern": true
     });
 
     function getStrokeColorForLayer(layer) {
@@ -591,6 +597,7 @@
         P14UpperRight = [P14[0] + halfBackDart1Pt, singleGuideY];
         var singleBackWaistRaise = drawLine(layers.dartsLayer, P14UpperLeft[0], singleGuideY, P14UpperRight[0], singleGuideY, null, []);
         try { singleBackWaistRaise.name = 'Back Waist Raise'; } catch (eSingleRaise) {}
+        duplicateToPattern(singleBackWaistRaise);
     }
     var halfBackDart2Pt = cm(rawBackDart2 / 2);
     var backDartLength2Pt = cm(Math.max(0, params.BackDartLength2 || 0));
@@ -622,49 +629,61 @@
         addHelperAnchor(layers.shapingLayer, firstBackDartLeftRounded, 'First Back Dart Left Reference');
         var backWaistRaise = drawLine(layers.dartsLayer, P15Left[0], P15TopY, P15Right[0], P15TopY, null, []);
         try { backWaistRaise.name = 'Back Waist Raise'; } catch (eBackRaise) {}
+        duplicateToPattern(backWaistRaise);
     }
 
     // CF line (1 to 2)
     var line12 = drawLine(layers.basicFrame, P1[0], P1[1], P2[0], P2[1], null, []);
     try { line12.name = 'Centre Front Line'; } catch (eCFName) {}
     addParallelLineLabel('Centre Front (CF)', P1, P2, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+    duplicateToPattern(line12);
     // Top horizontal (1 to 4)
     var line14 = drawLine(layers.basicFrame, P1[0], P1[1], P4[0], P4[1], null, []);
     try { line14.name = 'Waist Line'; } catch (eWaistName) {}
     addParallelLineLabel('Waist Line', P1, P4, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+    duplicateToPattern(line14);
     // Right vertical (4 to 5)
     var line45 = drawLine(layers.basicFrame, P4[0], P4[1], P5[0], P5[1], null, []);
     try { line45.name = 'Centre Back Line'; } catch (eCBName) {}
     addParallelLineLabel('Centre Back (CB)', P4, P5, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: -1 });
+    duplicateToPattern(line45);
     // Bottom horizontal (5 to 2)
     var line25 = drawLine(layers.basicFrame, P5[0], P5[1], P2[0], P2[1], null, []);
     try { line25.name = 'Hem Line'; } catch (eHemName) {}
     addParallelLineLabel('Hem Line', P5, P2, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: -1 });
+    duplicateToPattern(line25);
     // Mid vertical (7 to 8)
     var line78 = drawLine(layers.basicFrame, P7[0], P7[1], P8[0], P8[1], null, []);
     try { line78.name = 'Side Line'; } catch (eMidName) {}
     addParallelLineLabel('Side Line', P7, P8, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+    duplicateToPattern(line78);
 
     // Hip depth guide (3 horizontally across to meet 4-5 line) dashed
     var line36 = drawLine(layers.basicFrame, P3[0], P3[1], P6[0], P6[1], null, DASH_PT);
     try { line36.name = 'Hip Line'; } catch (eHipName) {}
     addParallelLineLabel('Hip Line', P3, P6, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+    duplicateToPattern(line36);
 
     // Extended top from 7 upwards to point 10
     var line710 = drawLine(layers.basicFrame, P7[0], P7[1], P10[0], P10[1], null, []);
     try { line710.name = 'Waist Shaping Guide'; } catch (eShapeName) {}
+    duplicateToPattern(line710);
 
     // Side dart halves from 10
     if (halfSideDartPt > 0) {
         var line10Left = drawLine(layers.dartsLayer, P10[0], P10[1], P11[0], P11[1], null, []);
         try { line10Left.name = 'Side Dart Left'; } catch (eSDL) {}
+        duplicateToPattern(line10Left);
         var line10Right = drawLine(layers.dartsLayer, P10[0], P10[1], P12[0], P12[1], null, []);
         try { line10Right.name = 'Side Dart Right'; } catch (eSDR) {}
+        duplicateToPattern(line10Right);
         var hipHandlePoint = [P7[0], P9[1] + HIP_CURVE_HANDLE_PT];
         var frontHipCurve = drawCurveWithHandle(layers.shapingLayer, [P11[0], P11[1]], [P9[0], P9[1]], 'Front Hip Curve', { side: -1, handlePoint: hipHandlePoint });
         try { frontHipCurve.name = 'Front Hip Curve'; } catch (eFrontName) {}
+        duplicateToPattern(frontHipCurve);
         var backHipCurve = drawCurveWithHandle(layers.shapingLayer, [P12[0], P12[1]], [P9[0], P9[1]], 'Back Hip Curve', { side: 1, handlePoint: hipHandlePoint });
         try { backHipCurve.name = 'Back Hip Curve'; } catch (eBackName) {}
+        duplicateToPattern(backHipCurve);
     }
 
     // Waist shaping dash (12 cm centered at P10)
@@ -672,16 +691,21 @@
     var P10Right = [P10[0] + cm(6), P10[1]];
     var waistGuide = drawLine(layers.basicFrame, P10Left[0], P10Left[1], P10Right[0], P10Right[1], null, DASH_PT);
     try { waistGuide.name = 'Upper Waist Shaping Guide'; } catch (eGuideName) {}
+    duplicateToPattern(waistGuide);
     var frontGuide = drawLine(layers.dartsLayer, P13dashLeft[0], P13dashLeft[1], P13dashRight[0], P13dashRight[1], null, DASH_PT);
     try { frontGuide.name = 'Front Dart Guide'; } catch (eFrontGuide) {}
+    duplicateToPattern(frontGuide);
     var line13Down = drawLine(layers.dartsLayer, P13[0], P13[1], P13Base[0], P13Base[1], null, DASH_PT);
     try { line13Down.name = 'Front Dart Centre'; } catch (eDartCenter) {}
+    duplicateToPattern(line13Down);
     if (halfFrontDartPt > 0) {
         var line13Left = drawLine(layers.dartsLayer, P13TopLeft[0], P13TopLeft[1], P13Base[0], P13Base[1], null, []);
         try { line13Left.name = 'Front Dart Left'; } catch (eDartLeft) {}
+        duplicateToPattern(line13Left);
         var line13Right = drawLine(layers.dartsLayer, P13TopRight[0], P13TopRight[1], P13Base[0], P13Base[1], null, []);
         try { line13Right.name = 'Front Dart Right'; } catch (eDartRight) {}
         addParallelLineLabel('Front Dart', P13TopLeft, P13TopRight, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+        duplicateToPattern(line13Right);
     }
 
     if (P1 && P13TopLeft) {
@@ -692,6 +716,7 @@
             endHandle: frontCurveEndHandle
         });
         try { cfFrontDartCurve.name = 'Front Waist Curve'; } catch (eFrontWaistCurve) {}
+        duplicateToPattern(cfFrontDartCurve);
     }
 
     if (P13TopRight && P11) {
@@ -702,6 +727,7 @@
             endHandle: frontHipHandle
         });
         try { frontHipTransition.name = 'Front Hip Transition'; } catch (eFrontHipTransition) {}
+        duplicateToPattern(frontHipTransition);
     }
 
     if (!hasSecondBackDart) {
@@ -713,15 +739,17 @@
                 endHandle: backCurveEndHandle
             });
             try { backWaistCurve.name = 'Back Waist Curve'; } catch (eBackWaistCurve) {}
+            duplicateToPattern(backWaistCurve);
         }
         if (P14UpperRight && P4) {
-            var backRightHandle = [P14UpperRight[0] + cm(0.1), P14UpperRight[1] - cm(0.15)];
+            var backRightHandle = [P14UpperRight[0] + cm(0.5), P14UpperRight[1]];
             var backCfHandle = [P4[0] - cm(4.25), P4[1]];
             var backWaistCF = drawCurveWithHandle(layers.shapingLayer, [P14UpperRight[0], P14UpperRight[1]], [P4[0], P4[1]], null, {
                 startHandle: backRightHandle,
                 endHandle: backCfHandle
             });
             try { backWaistCF.name = 'Back Waist CF Curve'; } catch (eBackWaistCF) {}
+            duplicateToPattern(backWaistCF);
         }
     } else {
         if (P12 && P15Left) {
@@ -732,6 +760,7 @@
                 endHandle: backCurveEndHandle2
             });
             try { backWaistCurve2.name = 'Back Waist Curve'; } catch (eBackWaistCurve2) {}
+            duplicateToPattern(backWaistCurve2);
         }
         if (P15Right && P14UpperLeft) {
             var backWaistTransition = drawCurveWithHandle(layers.shapingLayer, [P15Right[0], P15Right[1]], [P14UpperLeft[0], P14UpperLeft[1]], null, {
@@ -739,23 +768,28 @@
                 endHandle: [P14UpperLeft[0] - cm(2.4), P14UpperLeft[1]]
             });
             try { backWaistTransition.name = 'Back Waist Transition'; } catch (eBackTransition) {}
+            duplicateToPattern(backWaistTransition);
         }
     }
 
     if (singleBackDashLeft && singleBackDashRight) {
         var backGuide = drawLine(layers.dartsLayer, singleBackDashLeft[0], singleBackDashLeft[1], singleBackDashRight[0], singleBackDashRight[1], null, DASH_PT);
         try { backGuide.name = 'Back Dart Guide'; } catch (eBackGuide) {}
+        duplicateToPattern(backGuide);
     }
     if (backDartLength1Pt > 0) {
         var line14Down = drawLine(layers.dartsLayer, P14[0], P14[1], P14Base[0], P14Base[1], null, DASH_PT);
         try { line14Down.name = '1st Back Dart Centre'; } catch (eBackCenter) {}
+        duplicateToPattern(line14Down);
     }
     if (halfBackDart1Pt > 0) {
         var line14Left = drawLine(layers.dartsLayer, P14UpperLeft[0], P14UpperLeft[1], P14Base[0], P14Base[1], null, []);
         try { line14Left.name = 'First Back Dart Left'; } catch (eBackLeft) {}
+        duplicateToPattern(line14Left);
         var line14Right = drawLine(layers.dartsLayer, P14UpperRight[0], P14UpperRight[1], P14Base[0], P14Base[1], null, []);
         try { line14Right.name = 'First Back Dart Right'; } catch (eBackRight) {}
         addParallelLineLabel('1st Back Dart', P14UpperLeft, P14UpperRight, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+        duplicateToPattern(line14Right);
     }
 
     if (hasSecondBackDart && P15dashLeft && P15dashRight) {
@@ -764,6 +798,7 @@
     if (hasSecondBackDart && backDartLength2Pt > 0 && P15 && P15Base) {
         var line15Down = drawLine(layers.dartsLayer, P15[0], P15[1], P15Base[0], P15Base[1], null, DASH_PT);
         try { line15Down.name = '2nd Back Dart Centre'; } catch (eBackCenter2) {}
+        duplicateToPattern(line15Down);
     }
     if (hasSecondBackDart && halfBackDart2Pt > 0 && P15Left && P15Right && P15Base) {
         var line15Left = drawLine(layers.dartsLayer, P15Left[0], P15Left[1], P15Base[0], P15Base[1], null, []);
@@ -771,6 +806,8 @@
         var line15Right = drawLine(layers.dartsLayer, P15Right[0], P15Right[1], P15Base[0], P15Base[1], null, []);
         try { line15Right.name = 'Second Back Dart Right'; } catch (eBack2Right) {}
         addParallelLineLabel('2nd Back Dart', P15Left, P15Right, { offsetPt: LABEL_OFFSET_PT, layer: layers.labels, side: 1 });
+        duplicateToPattern(line15Left);
+        duplicateToPattern(line15Right);
     }
 
     // Markers
@@ -831,15 +868,31 @@
         var frontVal = (p.FrontDartOverride && isFinite(manualFront)) ? manualFront : frontAuto;
         result.FrontDart = frontVal;
 
-        var back1Auto = Math.min(waistDiffTarget * 0.3, 4.5);
+        var FIRST_BACK_DART_MAX = 4.5;
+        var MIN_SECOND_BACK_DART_CM_TARGET = 1;
+
+        var back1Auto = Math.min(waistDiffTarget * 0.3, FIRST_BACK_DART_MAX);
         var manualBack1 = Number(p.BackDart1);
-        var back1Val = (p.BackDart1Override && isFinite(manualBack1)) ? manualBack1 : back1Auto;
+        var back1OverrideActive = (p.BackDart1Override && isFinite(manualBack1));
+        var back1Val = back1OverrideActive ? manualBack1 : back1Auto;
         result.BackDart1 = back1Val;
 
         var remainder = waistDiffTarget - sideVal - frontVal - back1Val;
         var back2Auto = Math.max(0, remainder);
         var manualBack2 = Number(p.BackDart2);
-        var back2Val = (p.BackDart2Override && isFinite(manualBack2)) ? manualBack2 : back2Auto;
+        var back2OverrideActive = (p.BackDart2Override && isFinite(manualBack2));
+
+        if (!back1OverrideActive && !back2OverrideActive && back2Auto > 0 && back2Auto < MIN_SECOND_BACK_DART_CM_TARGET && back1Val < FIRST_BACK_DART_MAX) {
+            var transferable = Math.min(back2Auto, FIRST_BACK_DART_MAX - back1Val);
+            if (transferable > 0) {
+                back1Val += transferable;
+                result.BackDart1 = back1Val;
+                remainder -= transferable;
+                back2Auto = Math.max(0, remainder);
+            }
+        }
+
+        var back2Val = back2OverrideActive ? manualBack2 : back2Auto;
         result.BackDart2 = back2Val;
 
         var actualWaistDiff = Math.max(0, sideVal + frontVal + back1Val + back2Val);
