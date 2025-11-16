@@ -397,7 +397,7 @@
         return {
             mark11: [mark4Point[0] - capLenPt / 8, mark4Point[1]],
             mark12: [mark4Point[0] + capLenPt / 5, mark4Point[1]],
-            mark13: [mark2[0] - capLenPt / 9, mark2[1]],
+            mark13: [mark2[0] - capLenPt / 14, mark2[1]],
             mark14: [mark1[0] + capLenPt / 12, mark1[1]]
         };
     }
@@ -489,49 +489,80 @@
 
         var mid1213 = midpoint(points.mark12, points.mark13);
         if (!mid1213) mid1213 = mid1114;
-        var baselineBackDir = normalizeVector([mark1[0] - mark2[0], mark1[1] - mark2[1]]);
-        var arc2StartHandle = [
-            mark2[0] + baselineBackDir[0] * cm(4.3),
-            mark2[1] + baselineBackDir[1] * cm(4.3)
-        ];
-        var dirTo13 = normalizeVector([points.mark13[0] - mid1213[0], points.mark13[1] - mid1213[1]]);
-        var arc2EndHandle = [
-            mid1213[0] + dirTo13[0] * cm(4),
-            mid1213[1] + dirTo13[1] * cm(4)
-        ];
-        var backCapPath = drawBezierSegment(capLayer, mark2, mid1213, arc2StartHandle, arc2EndHandle, "Back Cap Arc");
-        var backNotch = addNotchOnPath(backCapPath, mark2, mid1213, arc2StartHandle, arc2EndHandle, derived.bAP || 0, capLayer, "Back Cap Notch");
-        if (backNotch) {
-            drawNotchAtPoint(capLayer, [
-                backNotch.point[0] + backNotch.normal[0] * cm(1),
-                backNotch.point[1] + backNotch.normal[1] * cm(1)
-            ], backNotch.normal, "Back Cap Notch Upper");
-        }
+        var intersection1213_24 = lineIntersection(points.mark12, points.mark13, mark2, mark4Point);
+        if (intersection1213_24) {
+            var baselineForwardDir = normalizeVector([mark2[0] - mark1[0], mark2[1] - mark1[1]]);
+            var line1213Dir = normalizeVector([points.mark13[0] - points.mark12[0], points.mark13[1] - points.mark12[1]]);
+            if (Math.abs(line1213Dir[1]) < 1e-6) {
+                line1213Dir = [0, 1];
+            } else if (line1213Dir[1] < 0) {
+                line1213Dir = [-line1213Dir[0], -line1213Dir[1]];
+            }
+            var line1213DownDir = [-line1213Dir[0], -line1213Dir[1]];
+            var handleMark4 = [
+                mark4Point[0] + baselineForwardDir[0] * cm(6.6),
+                mark4Point[1] + baselineForwardDir[1] * cm(6.6)
+            ];
+            var handleIntersectionUpper = [
+                intersection1213_24[0] + line1213Dir[0] * cm(2.95),
+                intersection1213_24[1] + line1213Dir[1] * cm(2.95)
+            ];
+            drawBezierSegment(capLayer, mark4Point, intersection1213_24, handleMark4, handleIntersectionUpper, "Back Cap Arc WS Upper");
 
-        var projectionB = computePerpendicularProjection(mark4Point, mark2, points.mark12);
-        var mid12b = projectionB && projectionB.projectPoint ? midpoint(points.mark12, projectionB.projectPoint) : midpoint(points.mark12, mark4Point);
-        var dirTo12 = normalizeVector([points.mark12[0] - mid1213[0], points.mark12[1] - mid1213[1]]);
-        var dir4To12 = normalizeVector([points.mark12[0] - mark4Point[0], points.mark12[1] - mark4Point[1]]);
-        var arc3EndHandle = [
-            mark4Point[0] + dir4To12[0] * cm(3.3),
-            mark4Point[1] + dir4To12[1] * cm(3.3)
-        ];
-        var targetPoint = mid12b || midpoint(mid1213, mark4Point);
-        var f0 = 0.125;
-        var f1 = 0.375;
-        var f2 = 0.375;
-        var f3 = 0.125;
-        var restX = f0 * mid1213[0] + f2 * arc3EndHandle[0] + f3 * mark4Point[0];
-        var restY = f0 * mid1213[1] + f2 * arc3EndHandle[1] + f3 * mark4Point[1];
-        var vecX = targetPoint[0] - restX - f1 * mid1213[0];
-        var vecY = targetPoint[1] - restY - f1 * mid1213[1];
-        var startLenPt = (vecX * dirTo12[0] + vecY * dirTo12[1]) / f1;
-        if (!isFinite(startLenPt) || startLenPt <= 0) startLenPt = cm(3);
-        var arc3StartHandle = [
-            mid1213[0] + dirTo12[0] * startLenPt,
-            mid1213[1] + dirTo12[1] * startLenPt
-        ];
-        drawBezierSegment(capLayer, mid1213, mark4Point, arc3StartHandle, arc3EndHandle, "Back Cap Arc 2");
+            var handleMark2 = [
+                mark2[0] - baselineForwardDir[0] * cm(3.5),
+                mark2[1] - baselineForwardDir[1] * cm(3.5)
+            ];
+            var handleIntersectionLower = [
+                intersection1213_24[0] - line1213Dir[0] * cm(1.5),
+                intersection1213_24[1] - line1213Dir[1] * cm(1.5)
+            ];
+            drawBezierSegment(capLayer, mark2, intersection1213_24, handleMark2, handleIntersectionLower, "Back Cap Arc WS Lower");
+        } else {
+            var baselineBackDir = normalizeVector([mark1[0] - mark2[0], mark1[1] - mark2[1]]);
+            var arc2StartHandle = [
+                mark2[0] + baselineBackDir[0] * cm(4.3),
+                mark2[1] + baselineBackDir[1] * cm(4.3)
+            ];
+            var dirTo13 = normalizeVector([points.mark13[0] - mid1213[0], points.mark13[1] - mid1213[1]]);
+            var arc2EndHandle = [
+                mid1213[0] + dirTo13[0] * cm(4),
+                mid1213[1] + dirTo13[1] * cm(4)
+            ];
+            var backCapPath = drawBezierSegment(capLayer, mark2, mid1213, arc2StartHandle, arc2EndHandle, "Back Cap Arc");
+            var backNotch = addNotchOnPath(backCapPath, mark2, mid1213, arc2StartHandle, arc2EndHandle, derived.bAP || 0, capLayer, "Back Cap Notch");
+            if (backNotch) {
+                drawNotchAtPoint(capLayer, [
+                    backNotch.point[0] + backNotch.normal[0] * cm(1),
+                    backNotch.point[1] + backNotch.normal[1] * cm(1)
+                ], backNotch.normal, "Back Cap Notch Upper");
+            }
+
+            var projectionB = computePerpendicularProjection(mark4Point, mark2, points.mark12);
+            var mid12b = projectionB && projectionB.projectPoint ? midpoint(points.mark12, projectionB.projectPoint) : midpoint(points.mark12, mark4Point);
+            var dirTo12 = normalizeVector([points.mark12[0] - mid1213[0], points.mark12[1] - mid1213[1]]);
+            var dir4To12 = normalizeVector([points.mark12[0] - mark4Point[0], points.mark12[1] - mark4Point[1]]);
+            var arc3EndHandle = [
+                mark4Point[0] + dir4To12[0] * cm(3.3),
+                mark4Point[1] + dir4To12[1] * cm(3.3)
+            ];
+            var targetPoint = mid12b || midpoint(mid1213, mark4Point);
+            var f0 = 0.125;
+            var f1 = 0.375;
+            var f2 = 0.375;
+            var f3 = 0.125;
+            var restX = f0 * mid1213[0] + f2 * arc3EndHandle[0] + f3 * mark4Point[0];
+            var restY = f0 * mid1213[1] + f2 * arc3EndHandle[1] + f3 * mark4Point[1];
+            var vecX = targetPoint[0] - restX - f1 * mid1213[0];
+            var vecY = targetPoint[1] - restY - f1 * mid1213[1];
+            var startLenPt = (vecX * dirTo12[0] + vecY * dirTo12[1]) / f1;
+            if (!isFinite(startLenPt) || startLenPt <= 0) startLenPt = cm(3);
+            var arc3StartHandle = [
+                mid1213[0] + dirTo12[0] * startLenPt,
+                mid1213[1] + dirTo12[1] * startLenPt
+            ];
+            drawBezierSegment(capLayer, mid1213, mark4Point, arc3StartHandle, arc3EndHandle, "Back Cap Arc 2");
+        }
     }
 
     function computePerpendicularProjection(lineStart, lineEnd, targetPoint) {
@@ -549,6 +580,22 @@
             projectPoint: proj,
             t: clampedT
         };
+    }
+
+    function lineIntersection(p1, p2, p3, p4) {
+        if (!p1 || !p2 || !p3 || !p4) return null;
+        var x1 = p1[0], y1 = p1[1];
+        var x2 = p2[0], y2 = p2[1];
+        var x3 = p3[0], y3 = p3[1];
+        var x4 = p4[0], y4 = p4[1];
+        var denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (Math.abs(denom) < 1e-6) return null;
+        var det1 = x1 * y2 - y1 * x2;
+        var det2 = x3 * y4 - y3 * x4;
+        var x = (det1 * (x3 - x4) - (x1 - x2) * det2) / denom;
+        var y = (det1 * (y3 - y4) - (y1 - y2) * det2) / denom;
+        if (!isFinite(x) || !isFinite(y)) return null;
+        return [x, y];
     }
 
     function drawBezierSegment(layer, startPt, endPt, startHandlePt, endHandlePt, name) {
