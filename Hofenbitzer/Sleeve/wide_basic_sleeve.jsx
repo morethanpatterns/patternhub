@@ -230,6 +230,46 @@
 
         placeMarker(layers.markers, layers.numbers, mark1, 1);
         placeMarker(layers.markers, layers.numbers, mark2, 2);
+
+        var upwardArc = buildMark3Arc(mark1, derived, bounds, ARC_TARGET_LENGTH_CM);
+        var mark4 = upwardArc ? buildMark4Intersection(mark2, upwardArc, derived) : null;
+
+        if ((!mark4 || !upwardArc) && ARC_MAX_LENGTH_CM > ARC_TARGET_LENGTH_CM) {
+            var extendedArc = buildMark3Arc(mark1, derived, bounds, ARC_MAX_LENGTH_CM);
+            var extendedMark4 = extendedArc ? buildMark4Intersection(mark2, extendedArc, derived) : null;
+            if (extendedArc && extendedMark4) {
+                upwardArc = extendedArc;
+                mark4 = extendedMark4;
+            }
+        }
+
+        if (upwardArc) {
+            drawArcPath(layers.basicFrame, upwardArc);
+            placeMarker(layers.markers, layers.numbers, upwardArc.endPoint, 3);
+        }
+
+        var mark4Point = mark4 ? mark4.point : null;
+        if (mark4Point) {
+            var backLineCm = pointDistanceCm(mark2, mark4Point);
+            var frontLineCm = pointDistanceCm(mark1, mark4Point);
+            drawDashedLine(
+                layers.basicFrame,
+                mark2,
+                mark4Point,
+                buildLineLabelOptions("Back Line", backLineCm, layers.labels)
+            );
+            drawDashedLine(
+                layers.basicFrame,
+                mark1,
+                mark4Point,
+                buildLineLabelOptions("Front Line", frontLineCm, layers.labels)
+            );
+            placeMarker(layers.markers, layers.numbers, mark4Point, 4);
+            buildVerticalAndSquares(layers, mark1, mark2, mark4Point, derived);
+            addCapMarkers(layers.capShaping, layers.markers, layers.numbers, mark1, mark2, mark4Point, derived);
+            addPerpendicularCapPoints(layers.capShaping, layers.markers, layers.numbers, mark1, mark2, mark4Point, derived);
+            addCapArcs(layers.capShaping, mark1, mark2, mark4Point, derived);
+        }
     }
 
     function drawDashedLine(targetLayer, startPt, endPt, options) {
@@ -815,7 +855,7 @@
         if (!derived) return 0;
         var bAh = (derived.bAhConstruction !== null && derived.bAhConstruction !== undefined) ? derived.bAhConstruction : derived.bAh;
         var capEase = (derived.CapEaseCm !== null && derived.CapEaseCm !== undefined) ? derived.CapEaseCm : 0;
-        var radius = 0.95 * (bAh || 0) + 0.75 * (capEase || 0);
+        var radius = 0.97 * (bAh || 0) + 0.75 * (capEase || 0);
         if (!isFinite(radius) || radius < 0) radius = 0;
         return radius;
     }
