@@ -39,7 +39,7 @@
         upAC: 28,
         upACEase: 9,
         WrC: 16,
-        WrCEase: null,
+        WrCEase: 6,
         CapEasePct: 3,
         CapEasePctEase: 0,
         CapCEase: 0,
@@ -466,20 +466,23 @@
             mid1114[1] + towards14Dir[1] * cm(4)
         ];
 
-        var frontCapPath = drawBezierSegment(capLayer, mark1, mid1114, arc1StartHandle, arc1EndHandle, "Front Cap Arc");
-        addNotchOnPath(frontCapPath, mark1, mid1114, arc1StartHandle, arc1EndHandle, derived.fAP || 0, capLayer, "Front Cap Notch");
-
-        var dirMidTo11 = normalizeVector([points.mark11[0] - mid1114[0], points.mark11[1] - mid1114[1]]);
+        var frontDirMidTo11 = normalizeVector([points.mark11[0] - mid1114[0], points.mark11[1] - mid1114[1]]);
         var frontSecondStartHandle = [
-            mid1114[0] + dirMidTo11[0] * cm(3),
-            mid1114[1] + dirMidTo11[1] * cm(3)
+            mid1114[0] + frontDirMidTo11[0] * cm(3),
+            mid1114[1] + frontDirMidTo11[1] * cm(3)
         ];
         var dir4To12 = normalizeVector([mark4Point[0] - points.mark12[0], mark4Point[1] - points.mark12[1]]);
         var frontSecondEndHandle = [
             mark4Point[0] + dir4To12[0] * cm(3.3),
             mark4Point[1] + dir4To12[1] * cm(3.3)
         ];
-        drawBezierSegment(capLayer, mid1114, mark4Point, frontSecondStartHandle, frontSecondEndHandle, "Front Cap Arc 2");
+        var frontNodes = [
+            { anchor: mark1, right: arc1StartHandle },
+            { anchor: mid1114, left: arc1EndHandle, right: frontSecondStartHandle },
+            { anchor: mark4Point, left: frontSecondEndHandle }
+        ];
+        var frontCapPath = drawBezierChain(capLayer, frontNodes, "Front Cap Arc");
+        addNotchOnPath(frontCapPath, mark1, mid1114, arc1StartHandle, arc1EndHandle, derived.fAP || 0, capLayer, "Front Cap Notch");
 
         var startDirTo11 = normalizeVector([points.mark11[0] - mid1114[0], points.mark11[1] - mid1114[1]]);
         var arc2EndHandle = [
@@ -498,7 +501,6 @@
             } else if (line1213Dir[1] < 0) {
                 line1213Dir = [-line1213Dir[0], -line1213Dir[1]];
             }
-            var line1213DownDir = [-line1213Dir[0], -line1213Dir[1]];
             var handleMark4 = [
                 mark4Point[0] + baselineForwardDir[0] * cm(6.6),
                 mark4Point[1] + baselineForwardDir[1] * cm(6.6)
@@ -507,7 +509,6 @@
                 intersection1213_24[0] + line1213Dir[0] * cm(2.95),
                 intersection1213_24[1] + line1213Dir[1] * cm(2.95)
             ];
-            drawBezierSegment(capLayer, mark4Point, intersection1213_24, handleMark4, handleIntersectionUpper, "Back Cap Arc WS Upper");
 
             var handleMark2 = [
                 mark2[0] - baselineForwardDir[0] * cm(3.5),
@@ -517,7 +518,14 @@
                 intersection1213_24[0] - line1213Dir[0] * cm(1.5),
                 intersection1213_24[1] - line1213Dir[1] * cm(1.5)
             ];
-            drawBezierSegment(capLayer, mark2, intersection1213_24, handleMark2, handleIntersectionLower, "Back Cap Arc WS Lower");
+
+            var backNodesCustom = [
+                { anchor: mark2, right: handleMark2 },
+                { anchor: intersection1213_24, left: handleIntersectionLower, right: handleIntersectionUpper },
+                { anchor: mark4Point, left: handleMark4 }
+            ];
+            var wsBackPath = drawBezierChain(capLayer, backNodesCustom, "Back Cap Arc WS");
+            addBackCapNotches(wsBackPath, backNodesCustom, capLayer, derived);
         } else {
             var baselineBackDir = normalizeVector([mark1[0] - mark2[0], mark1[1] - mark2[1]]);
             var arc2StartHandle = [
@@ -525,18 +533,10 @@
                 mark2[1] + baselineBackDir[1] * cm(4.3)
             ];
             var dirTo13 = normalizeVector([points.mark13[0] - mid1213[0], points.mark13[1] - mid1213[1]]);
-            var arc2EndHandle = [
+            var arc2EndHandleFallback = [
                 mid1213[0] + dirTo13[0] * cm(4),
                 mid1213[1] + dirTo13[1] * cm(4)
             ];
-            var backCapPath = drawBezierSegment(capLayer, mark2, mid1213, arc2StartHandle, arc2EndHandle, "Back Cap Arc");
-            var backNotch = addNotchOnPath(backCapPath, mark2, mid1213, arc2StartHandle, arc2EndHandle, derived.bAP || 0, capLayer, "Back Cap Notch");
-            if (backNotch) {
-                drawNotchAtPoint(capLayer, [
-                    backNotch.point[0] + backNotch.normal[0] * cm(1),
-                    backNotch.point[1] + backNotch.normal[1] * cm(1)
-                ], backNotch.normal, "Back Cap Notch Upper");
-            }
 
             var projectionB = computePerpendicularProjection(mark4Point, mark2, points.mark12);
             var mid12b = projectionB && projectionB.projectPoint ? midpoint(points.mark12, projectionB.projectPoint) : midpoint(points.mark12, mark4Point);
@@ -557,11 +557,18 @@
             var vecY = targetPoint[1] - restY - f1 * mid1213[1];
             var startLenPt = (vecX * dirTo12[0] + vecY * dirTo12[1]) / f1;
             if (!isFinite(startLenPt) || startLenPt <= 0) startLenPt = cm(3);
-            var arc3StartHandle = [
+            var arc3StartHandleFallback = [
                 mid1213[0] + dirTo12[0] * startLenPt,
                 mid1213[1] + dirTo12[1] * startLenPt
             ];
-            drawBezierSegment(capLayer, mid1213, mark4Point, arc3StartHandle, arc3EndHandle, "Back Cap Arc 2");
+
+            var backNodesFallback = [
+                { anchor: mark2, right: arc2StartHandle },
+                { anchor: mid1213, left: arc2EndHandleFallback, right: arc3StartHandleFallback },
+                { anchor: mark4Point, left: arc3EndHandle }
+            ];
+            var backCapPath = drawBezierChain(capLayer, backNodesFallback, "Back Cap Arc");
+            addBackCapNotches(backCapPath, backNodesFallback, capLayer, derived);
         }
     }
 
@@ -625,6 +632,39 @@
         return path;
     }
 
+    function drawBezierChain(layer, nodes, name) {
+        if (!layer || !nodes || nodes.length < 2) return null;
+        ensureLayerWritable(layer);
+        var path = layer.pathItems.add();
+        if (name) {
+            try { path.name = name; } catch (eName) {}
+        }
+        path.stroked = true;
+        path.strokeWidth = 1;
+        path.strokeColor = COL_BLACK;
+        path.strokeDashes = [];
+        path.strokeCap = StrokeCap.BUTTENDCAP;
+        path.strokeJoin = StrokeJoin.ROUNDENDJOIN;
+        path.filled = false;
+        path.closed = false;
+        var anchors = [];
+        for (var i = 0; i < nodes.length; i++) {
+            anchors.push(nodes[i] && nodes[i].anchor ? nodes[i].anchor : [0, 0]);
+        }
+        path.setEntirePath(anchors);
+        for (var p = 0; p < path.pathPoints.length; p++) {
+            var node = nodes[p] || {};
+            var anchor = node.anchor || anchors[p];
+            var left = node.left || anchor;
+            var right = node.right || anchor;
+            var pp = path.pathPoints[p];
+            pp.anchor = anchor;
+            pp.leftDirection = (p === 0) ? anchor : left;
+            pp.rightDirection = (p === nodes.length - 1) ? anchor : right;
+        }
+        return path;
+    }
+
     function midpoint(ptA, ptB) {
         if (!ptA || !ptB) return null;
         return [
@@ -681,6 +721,39 @@
         var notchStart = [center[0] - normal[0] * notchHalf, center[1] - normal[1] * notchHalf];
         var notchEnd = [center[0] + normal[0] * notchHalf, center[1] + normal[1] * notchHalf];
         drawDashedLine(layer, notchStart, notchEnd, { name: notchName || "" });
+    }
+
+    function addBackCapNotches(path, nodes, layer, derived) {
+        if (!path || !nodes || nodes.length < 2 || !layer || !derived) return;
+        var baseDistance = num(derived.bAP || 0);
+        if (!isFinite(baseDistance) || baseDistance <= 0) return;
+        var distances = [baseDistance, baseDistance + 1];
+        var names = ["Back Cap Notch", "Back Cap Notch Upper"];
+        for (var i = 0; i < distances.length; i++) {
+            placeBackNotchOnChain(path, nodes, layer, distances[i], names[i]);
+        }
+    }
+
+    function placeBackNotchOnChain(path, nodes, layer, distanceCm, notchName) {
+        if (!isFinite(distanceCm) || distanceCm <= 0) return;
+        var remaining = distanceCm;
+        for (var i = 1; i < nodes.length; i++) {
+            var prev = nodes[i - 1] || {};
+            var curr = nodes[i] || {};
+            var startPt = prev.anchor;
+            var endPt = curr.anchor;
+            if (!startPt || !endPt) continue;
+            var startHandle = prev.right || startPt;
+            var endHandle = curr.left || endPt;
+            var segLenPt = approximateBezierLength(startPt, startHandle, endHandle, endPt);
+            var segLenCm = segLenPt / CM_TO_PT;
+            if (!isFinite(segLenCm) || segLenCm <= 0) continue;
+            if (remaining <= segLenCm) {
+                addNotchOnPath(path, startPt, endPt, startHandle, endHandle, remaining, layer, notchName);
+                return;
+            }
+            remaining -= segLenCm;
+        }
     }
 
     function evaluateBezierPoint(p0, p1, p2, p3, t) {
@@ -1129,7 +1202,8 @@
         derivedValues.SlL = AL + num(data.ALEase);
         var upper = num(data.upAC || 0);
         derivedValues.SlW = upper + num(data.upACEase);
-        derivedValues.HeW = derivedValues.SlL; // Wide sleeve: Hem width equals SiL (sleeve length)
+        var wrist = num(data.WrC || 0);
+        derivedValues.HeW = wrist + num(data.WrCEase);
         derivedValues.CapLineEase = num(data.CapLineEase);
 
         derivedValues.CapEasePct = num(data.CapEasePct);
@@ -1137,6 +1211,7 @@
         derivedValues.CapEaseCm = derivedValues.AhCConstruction * derivedValues.CapEasePctConstruction / 100;
         derivedValues.CapC = derivedValues.AhCConstruction + derivedValues.CapEaseCm + num(data.CapCEase);
         derivedValues.fAP = num(data.fAP || 0);
+        derivedValues.bAP = num(data.bAP || 0);
         return derivedValues;
     }
 
@@ -1212,7 +1287,7 @@
             {
                 number: 7,
                 main: { type: "input", key: "WrC", label: "WrC", defaultValue: 16 },
-                ease: { type: "input", key: "WrCEase", label: "Ease", defaultValue: "" },
+                ease: { type: "input", key: "WrCEase", label: "Ease", defaultValue: 6 },
                 construction: { type: "derived", key: "HeW", label: "HeW" }
             },
             {
