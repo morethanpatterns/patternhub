@@ -47,6 +47,8 @@
 
     var CM_TO_PT = 28.346456692913385;
     function cm(val) { return val * CM_TO_PT; }
+    var CM_TO_IN = 1 / 2.54;
+    function cmInches(val) { return val * CM_TO_IN; }
 
     var ARTBOARD_MARGIN_CM = 10;
     var STROKE_PT = 1;
@@ -354,6 +356,8 @@
     trackDraftItem(fDropLine);
     var pointFResult = markPoint("F", pointFPosition, "F");
     var pointF = pointFResult.point;
+    var fhLine = drawStraightLine(layerStack.foundationFront, pointF, pointH, "solid", { name: "Dart Center", color: "black" });
+    trackDraftItem(fhLine);
     var bfLine = drawStraightLine(layerStack.front, pointB, pointF, "solid", { name: "Front Waist Line 2", color: "blue" });
     trackDraftItem(bfLine);
 
@@ -733,20 +737,6 @@
     });
     trackDraftItem(backMNLine);
 
-    var backHNVecX = backPointN.x - backPointH.x;
-    var backHNVecY = backPointN.y - backPointH.y;
-    var backHNLength = Math.sqrt(backHNVecX * backHNVecX + backHNVecY * backHNVecY);
-    if (backHNLength > 0) {
-        var backHNArc = drawBezierArc(layerStack.back, backPointH, backPointH, backPointN, {
-            name: "Back Armhole Curve",
-            color: "blue",
-            controlStartRatio: { tangent: 0.5836719092, normal: -0.3423131657 },
-            controlStartOffset: { x: 0.3, y: 0 },
-            controlEndRatio: { tangent: -0.1240008345, normal: -0.3063856393 }
-        });
-        trackDraftItem(backHNArc);
-    }
-
     var backMNLength = Math.sqrt((backPointN.x - backPointM.x) * (backPointN.x - backPointM.x) +
         (backPointN.y - backPointM.y) * (backPointN.y - backPointM.y));
     var backOOffset = Math.max(0, backMNLength - 1);
@@ -786,6 +776,16 @@
         layer: layerStack.foundationBack
     });
     trackDraftItem(backUGuide);
+
+    var hHandle = movePoint(backPointH, cmInches(6), cmInches(10.21));
+    var nHandle = movePoint(backPointN, cmInches(4.07), 0);
+    var backHNArc = drawBezierArc(layerStack.back, backPointH, backPointH, backPointN, {
+        name: "Back Armhole Curve",
+        color: "blue",
+        controlStartAbsolute: hHandle,
+        controlEndAbsolute: nHandle
+    });
+    trackDraftItem(backHNArc);
 
     var extensionLength = 0.125;
     var oiVecX = backPointI.x - backPointO.x;
